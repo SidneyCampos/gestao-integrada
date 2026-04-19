@@ -1,0 +1,8 @@
+/* Essa única linha importa todo o poder do Tailwind v4 */
+@import "tailwindcss";
+
+/* Definindo a cor de fundo padrão para todo o sistema (um cinza bem claro) */
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
