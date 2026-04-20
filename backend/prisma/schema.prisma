@@ -14,28 +14,28 @@ generator client {
 
 model Setor {
   id       Int       @id @default(autoincrement())
-  nome     String    @unique // Ex: "Almoxarifado", "RH"
-  usuarios Usuario[] // Relacionamento: Um setor tem vários usuários
+  nome     String    @unique
+  // Relação N:N (Muitos para Muitos) - O Prisma resolve a tabela intermediária sozinho!
+  usuarios Usuario[]
 }
 
 model Usuario {
   id       Int     @id @default(autoincrement())
   nome     String
-  telefone String? // A interrogação significa que é opcional
+  telefone String?
 
-  // Ligação genérica com o setor
-  setorId Int
-  setor   Setor @relation(fields: [setorId], references: [id])
+  // Agora um usuário pode ter NENHUM, UM ou VÁRIOS setores!
+  setores Setor[]
 
-  // Dados de Login (se for nulo, ele não acessa o sistema)
-  login     String? @unique
-  senhaHash String? // Nunca salvamos a senha real, apenas o "hash" (criptografia)
+  // Dados de Login
+  login String? @unique
+  senha String? // Para simplificar agora, sem hash complexo.
 
   // Permissões
-  isAdmin Boolean @default(false) // Apenas 1 será true
+  isAdmin Boolean @default(false)
 
   // O que esse usuário fez?
-  emprestimos Emprestimo[] // Relacionamento com almoxarifado
+  emprestimos Emprestimo[]
 }
 
 // ==========================================
@@ -54,15 +54,14 @@ model Ferramenta {
 
 model Emprestimo {
   id            Int       @id @default(autoincrement())
-  dataSaida     DateTime  @default(now()) // Pega a data atual automaticamente
-  dataDevolucao DateTime? // Nulo significa que ainda está com o funcionário
-  status        String    @default("PENDENTE") // Pode ser PENDENTE ou DEVOLVIDO
+  dataSaida     DateTime  @default(now())
+  dataDevolucao DateTime?
+  status        String    @default("PENDENTE")
 
-  // Quem pegou?
-  usuarioId Int
-  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+  quantidade Int @default(1) // <--- NOVA LINHA AQUI
 
-  // O que pegou?
+  usuarioId    Int
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id])
   ferramentaId Int
   ferramenta   Ferramenta @relation(fields: [ferramentaId], references: [id])
 }

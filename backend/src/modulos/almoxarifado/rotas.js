@@ -10,11 +10,11 @@ router.get('/ferramentas', FerramentaController.listar);
 router.post('/ferramentas', FerramentaController.criar);
 
 // --- Rotas de Empréstimos ---
-// POST porque estamos criando um novo registro de empréstimo
-router.post('/emprestimos', EmprestimoController.emprestar);
 
-// PATCH (ou PUT) é usado quando queremos atualizar apenas uma parte do dado (no caso, o status e a data)
-// O ':id' na URL significa que é um valor dinâmico. Ex: /emprestimos/5/devolver
+// NOVA ROTA: Buscar a lista de empréstimos
+router.get('/emprestimos', EmprestimoController.listar);
+
+router.post('/emprestimos', EmprestimoController.emprestar);
 router.patch('/emprestimos/:id/devolver', EmprestimoController.devolver);
 
 module.exports = router;

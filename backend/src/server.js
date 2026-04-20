@@ -5,6 +5,8 @@ const cors = require('cors');
 const rotasAlmoxarifado = require('./modulos/almoxarifado/rotas');
 // const rotasRH = require('./modulos/rh/rotas'); // Exemplo de uso futuro
 
+const rotasCore = require('./core/rotas');
+
 const app = express();
 
 // 2. CONFIGURAÇÕES GERAIS
@@ -16,6 +18,8 @@ app.use(express.json());
 // 3. REGISTRO DE ROTAS (Organização por setor)
 // Toda requisição que começar com '/api/almoxarifado' será direcionada para o arquivo de rotas do almoxarifado
 app.use('/api/almoxarifado', rotasAlmoxarifado);
+
+app.use('/api/core', rotasCore);
 
 // Exemplo futuro para outro setor:
 // app.use('/api/rh', rotasRH); 
