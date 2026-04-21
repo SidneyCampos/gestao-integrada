@@ -72,28 +72,65 @@ function TelaInicial({ usuario }) {
   );
 }
 
+// ... (mantenha os imports e a função TelaInicial e RotaProtegida iguais)
+
+// ========================================================
+// APLICATIVO PRINCIPAL E GERENCIADOR DE ESTADO
+// ========================================================
 export default function App() {
-  // ================= A MÁGICA DA MEMÓRIA (LocalStorage) =================
-  // Ao ligar o app, ele procura no "HD do navegador" se já existe um crachá salvo.
+  // ================= A MÁGICA DA MEMÓRIA =================
   const [usuarioLogado, setUsuarioLogado] = useState(() => {
     const crachaSalvo = localStorage.getItem("usuarioPrefHub");
     return crachaSalvo ? JSON.parse(crachaSalvo) : null;
   });
 
-  // Função para fazer Login e salvar o crachá
+  // ================= CONTROLE INTELIGENTE DA SPLASH SCREEN =================
+  useEffect(() => {
+    // 1. O React começou a rodar! Marcamos o momento exato.
+    const tempoDeInicio = Date.now();
+    const tempoMinimoDesejado = 2000; // 2 Segundos
+
+    // 2. Criamos a função que vai esconder a tela azul
+    const removerSplash = () => {
+      const tempoDecorrido = Date.now() - tempoDeInicio;
+      const tempoFaltante = tempoMinimoDesejado - tempoDecorrido;
+
+      // Se o React carregou muito rápido (ex: 500ms), ele espera os 1500ms restantes
+      // Se demorou muito (ex: 3000ms), tempoFaltante será negativo e o setTimeout roda na hora (0)
+      setTimeout(
+        () => {
+          const splash = document.getElementById("splash-screen");
+          if (splash) {
+            splash.classList.add("esconder-splash");
+            // Depois de esconder suavemente, removemos do HTML para poupar memória do celular
+            setTimeout(() => splash.remove(), 600);
+          }
+        },
+        Math.max(0, tempoFaltante),
+      );
+    };
+
+    // 3. Verifica se a janela (DOM) já terminou de carregar os componentes
+    if (document.readyState === "complete") {
+      removerSplash();
+    } else {
+      window.addEventListener("load", removerSplash);
+      return () => window.removeEventListener("load", removerSplash);
+    }
+  }, []); // O array vazio garante que isso rode apenas 1 vez quando o App abrir
+
+  // ================= FUNÇÕES DE LOGIN/LOGOUT =================
   const handleLoginSuccess = (dadosUsuario) => {
     setUsuarioLogado(dadosUsuario);
-    // Salva no HD do navegador (transformando em texto)
     localStorage.setItem("usuarioPrefHub", JSON.stringify(dadosUsuario));
   };
 
-  // Função para Sair e rasgar o crachá
   const handleLogout = () => {
     setUsuarioLogado(null);
-    // Apaga do HD do navegador
     localStorage.removeItem("usuarioPrefHub");
   };
 
+  // ================= RENDERIZAÇÃO DAS TELAS =================
   if (!usuarioLogado) {
     return <Login onLogin={handleLoginSuccess} />;
   }
@@ -105,8 +142,6 @@ export default function App() {
           path="/"
           element={<Layout usuario={usuarioLogado} onLogout={handleLogout} />}
         >
-          {/* <Route index element={<TelaInicial />} /> */}
-
           <Route index element={<TelaInicial usuario={usuarioLogado} />} />
 
           <Route

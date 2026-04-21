@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { Wrench, Users, Car, LogOut, MoreHorizontal } from "lucide-react";
+// O GRANDE CULPADO ESTAVA AQUI: Faltava o X na lista de ícones!
+import { Wrench, Users, Car, LogOut, MoreHorizontal, X } from "lucide-react";
+import axios from "axios";
 
 const modulosDisponiveis = [
   {
@@ -13,13 +15,17 @@ const modulosDisponiveis = [
   { nome: "Frota de Veículos", path: "/frota", icone: Car, isPrimary: false },
 ];
 
-// CORREÇÃO AQUI: Chaves { } adicionadas para extrair as variáveis do React corretamente!
 export default function Layout({ usuario, onLogout }) {
   const location = useLocation();
   const isActive = (path) => location.pathname.startsWith(path);
 
-  // NOVO ESTADO: Controla se a janelinha do botão 'Mais' está aberta
   const [menuMaisAberto, setMenuMaisAberto] = useState(false);
+
+  // ESTADOS DO PERFIL
+  const [modalPerfilAberto, setModalPerfilAberto] = useState(false);
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [statusSenha, setStatusSenha] = useState({ tipo: "", msg: "" });
 
   const modulosPermitidos = modulosDisponiveis.filter((modulo) => {
     if (usuario?.isAdmin) return true;
@@ -27,8 +33,32 @@ export default function Layout({ usuario, onLogout }) {
   });
 
   const modulosPrimarios = modulosPermitidos.filter((m) => m.isPrimary);
-  // NOVA VARIÁVEL: Pega todos os módulos que NÃO são primários (ex: RH e Frota)
   const modulosSecundarios = modulosPermitidos.filter((m) => !m.isPrimary);
+
+  // FUNÇÃO DE ALTERAR SENHA
+  const handleMudarSenha = async (e) => {
+    e.preventDefault();
+    if (novaSenha !== confirmarSenha) {
+      return setStatusSenha({ tipo: "erro", msg: "As senhas não coincidem." });
+    }
+    try {
+      setStatusSenha({ tipo: "loading", msg: "Salvando..." });
+      await axios.patch(`/api/core/usuarios/${usuario.id}/senha`, {
+        novaSenha,
+      });
+
+      setStatusSenha({ tipo: "sucesso", msg: "Senha alterada com sucesso!" });
+      setNovaSenha("");
+      setConfirmarSenha("");
+
+      setTimeout(() => {
+        setModalPerfilAberto(false);
+        setStatusSenha({ tipo: "", msg: "" });
+      }, 2000);
+    } catch (erro) {
+      setStatusSenha({ tipo: "erro", msg: "Erro ao alterar senha." });
+    }
+  };
 
   return (
     <div className="flex h-[100dvh] bg-slate-100 text-slate-900 font-sans overflow-hidden">
@@ -43,7 +73,6 @@ export default function Layout({ usuario, onLogout }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
-          {/* USAMOS A LISTA FILTRADA AQUI */}
           {modulosPermitidos.map((modulo) => (
             <Link
               key={modulo.nome}
@@ -57,7 +86,6 @@ export default function Layout({ usuario, onLogout }) {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          {/* BOTÃO SAIR CORRIGIDO COM EVENTO onClick={onLogout} */}
           <button
             onClick={onLogout}
             className="flex items-center w-full p-3 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
@@ -71,33 +99,30 @@ export default function Layout({ usuario, onLogout }) {
       <div className="flex-1 flex flex-col min-w-0">
         {/* ================= HEADER (DESKTOP E MOBILE) ================= */}
         <header className="h-20 shrink-0 bg-white border-b border-slate-200">
-          {/* Header do Desktop */}
           <div className="hidden md:flex items-center justify-between px-8 h-full">
             <h2 className="text-xl font-bold text-slate-700 tracking-tight">
               Gestão Integrada
             </h2>
-
             <div className="flex items-center">
               <div className="flex flex-col text-right mr-4">
-                {/* NOME DO USUÁRIO VERDADEIRO */}
                 <span className="text-sm font-bold text-slate-800 leading-tight">
                   {usuario?.nome || "Servidor"}
                 </span>
-                {/* SETOR DO USUÁRIO VERDADEIRO */}
                 <span className="text-xs text-slate-500 leading-tight">
                   {usuario?.isAdmin
                     ? "Administrador Geral"
                     : usuario?.setores?.[0]?.nome || "Sem Setor"}
                 </span>
               </div>
-              {/* PRIMEIRA LETRA DO NOME NA BOLINHA */}
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+              <button
+                onClick={() => setModalPerfilAberto(true)}
+                className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md hover:bg-blue-700 transition-colors outline-none"
+              >
                 {usuario?.nome?.charAt(0).toUpperCase() || "S"}
-              </div>
+              </button>
             </div>
           </div>
 
-          {/* Header do Mobile */}
           <div className="md:hidden h-full flex items-center justify-between px-4">
             <div className="h-12 w-48 flex items-center">
               <img
@@ -106,9 +131,12 @@ export default function Layout({ usuario, onLogout }) {
                 className="max-h-full max-w-full object-contain"
               />
             </div>
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-blue-100">
+            <button
+              onClick={() => setModalPerfilAberto(true)}
+              className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-blue-100 outline-none"
+            >
               {usuario?.nome?.charAt(0).toUpperCase() || "S"}
-            </div>
+            </button>
           </div>
         </header>
 
@@ -118,9 +146,7 @@ export default function Layout({ usuario, onLogout }) {
       </div>
 
       {/* ================= BARRA DE NAVEGAÇÃO INFERIOR (MOBILE) ================= */}
-      {/* ================= BARRA DE NAVEGAÇÃO INFERIOR (MOBILE) ================= */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-8px_15px_-3px_rgba(0,0,0,0.05)] z-50">
-        {/* OVERLAY: Se o menu 'Mais' estiver aberto e clicar fora, ele fecha */}
         {menuMaisAberto && (
           <div
             className="fixed inset-0 z-40 bg-slate-900/20"
@@ -128,14 +154,13 @@ export default function Layout({ usuario, onLogout }) {
           ></div>
         )}
 
-        {/* MENU FLUTUANTE DO BOTÃO MAIS */}
         {menuMaisAberto && modulosSecundarios.length > 0 && (
           <div className="absolute bottom-20 right-4 w-56 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-bottom-2">
             {modulosSecundarios.map((modulo) => (
               <Link
                 key={modulo.nome}
                 to={modulo.path}
-                onClick={() => setMenuMaisAberto(false)} // Fecha o menu ao clicar num link
+                onClick={() => setMenuMaisAberto(false)}
                 className="flex items-center gap-3 p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
               >
                 <modulo.icone className="w-5 h-5 text-slate-500" />
@@ -161,7 +186,6 @@ export default function Layout({ usuario, onLogout }) {
             </Link>
           ))}
 
-          {/* BOTÃO MAIS COM AÇÃO DE CLIQUE */}
           <button
             onClick={() => setMenuMaisAberto(!menuMaisAberto)}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${menuMaisAberto ? "text-blue-600" : "text-slate-500"}`}
@@ -183,6 +207,114 @@ export default function Layout({ usuario, onLogout }) {
           </button>
         </div>
       </nav>
+
+      {/* ================= MODAL MEU PERFIL ================= */}
+      {modalPerfilAberto && (
+        <div
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+          onClick={() => setModalPerfilAberto(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
+              <h2 className="text-lg font-bold text-slate-800">Meu Perfil</h2>
+              <button
+                onClick={() => setModalPerfilAberto(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold shadow-md">
+                  {usuario?.nome?.charAt(0).toUpperCase() || "S"}
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-lg">
+                    {usuario?.nome}
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    Login: <span className="font-mono">{usuario?.login}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <p className="text-xs font-bold text-slate-500 uppercase mb-2">
+                  Permissões de Acesso
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {usuario?.isAdmin ? (
+                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold">
+                      👑 Administrador Geral
+                    </span>
+                  ) : (
+                    usuario?.setores?.map((s) => (
+                      <span
+                        key={s.id}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold border border-blue-200"
+                      >
+                        {s.nome}
+                      </span>
+                    )) || (
+                      <span className="text-sm text-slate-500 italic">
+                        Nenhum setor atribuído
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+
+              <form
+                onSubmit={handleMudarSenha}
+                className="border-t border-slate-200 pt-4 space-y-4"
+              >
+                <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                  Alterar Senha de Acesso
+                </p>
+                <div className="flex gap-4">
+                  <input
+                    type="password"
+                    required
+                    placeholder="Nova Senha"
+                    value={novaSenha}
+                    onChange={(e) => setNovaSenha(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <input
+                    type="password"
+                    required
+                    placeholder="Confirmar Senha"
+                    value={confirmarSenha}
+                    onChange={(e) => setConfirmarSenha(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                {statusSenha.msg && (
+                  <p
+                    className={`text-xs font-bold text-center ${statusSenha.tipo === "erro" ? "text-red-500" : statusSenha.tipo === "sucesso" ? "text-emerald-600" : "text-blue-500"}`}
+                  >
+                    {statusSenha.msg}
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={statusSenha.tipo === "loading"}
+                  className="w-full py-2 bg-slate-800 text-white font-semibold rounded-lg text-sm hover:bg-slate-900 transition-colors disabled:opacity-50"
+                >
+                  {statusSenha.tipo === "loading"
+                    ? "Salvando..."
+                    : "Salvar Nova Senha"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
