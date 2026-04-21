@@ -32,7 +32,7 @@ export default function Login({ onLogin }) {
         senha: senha,
       });
 
-      // Se o backend disser OK, passamos os dados do usuário para o App.jsx
+      // Se o backend disser OK, passamos o objeto completo { usuario, token } para o App.jsx
       onLogin(resposta.data);
     } catch (error) {
       // Se for erro 401 (senha incorreta), mostramos a mensagem que o backend mandou

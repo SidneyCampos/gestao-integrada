@@ -6,11 +6,12 @@
  * @module Frontend/Components/Layout
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 // O GRANDE CULPADO ESTAVA AQUI: Faltava o X na lista de ícones!
 import { Wrench, Users, Car, LogOut, MoreHorizontal, X } from "lucide-react";
 import axios from "axios";
+import { hasPermission } from "../utils/auth";
 
 const modulosDisponiveis = [
   {
@@ -40,13 +41,18 @@ export default function Layout({ usuario, onLogout }) {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [statusSenha, setStatusSenha] = useState({ tipo: "", msg: "" });
 
-  const modulosPermitidos = modulosDisponiveis.filter((modulo) => {
-    if (usuario?.isAdmin) return true;
-    return usuario?.setores?.some((setor) => setor.nome === modulo.nome);
-  });
+  // Memoriza o cálculo da navegação para não reprocessar a cada letra digitada nos inputs/modais
+  const { modulosPermitidos, modulosPrimarios, modulosSecundarios } = useMemo(() => {
+    const permitidos = modulosDisponiveis.filter((modulo) => 
+      hasPermission(usuario, modulo.nome)
+    );
 
-  const modulosPrimarios = modulosPermitidos.filter((m) => m.isPrimary);
-  const modulosSecundarios = modulosPermitidos.filter((m) => !m.isPrimary);
+    return {
+      modulosPermitidos: permitidos,
+      modulosPrimarios: permitidos.filter((m) => m.isPrimary),
+      modulosSecundarios: permitidos.filter((m) => !m.isPrimary),
+    };
+  }, [usuario]);
 
   // FUNÇÃO DE ALTERAR SENHA
   /**

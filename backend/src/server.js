@@ -11,15 +11,15 @@ const path = require('path'); // Ferramenta nativa do Node para ler pastas
 
 const rotasAlmoxarifado = require('./modulos/almoxarifado/rotas');
 const rotasCore = require('./core/rotas');
+const authMiddleware = require('./core/authMiddleware');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==========================================
 // 1. ROTAS DE API (O Cérebro do Banco)
 // ==========================================
-app.use('/api/almoxarifado', rotasAlmoxarifado);
+app.use('/api/almoxarifado', authMiddleware, rotasAlmoxarifado);
 app.use('/api/core', rotasCore);
 
 // ==========================================

@@ -7,6 +7,7 @@
  */
 
 const prisma = require('./prisma');
+const jwt = require('jsonwebtoken');
 
 class AuthController {
     /**
@@ -34,8 +35,20 @@ class AuthController {
             // 3. REGRA DE SEGURANÇA SÊNIOR: Nunca devolva a senha para o Frontend!
             const { senha: senhaOculta, ...usuarioSeguro } = usuario;
 
-            // Retorna o usuário validado
-            return res.status(200).json(usuarioSeguro);
+            // 4. GERA O TOKEN DE ACESSO (JWT)
+            // Guardamos o ID, Nome e se é Admin dentro do Token
+            const secret = process.env.JWT_SECRET || 'chave-secreta-padrao-iguatama';
+            const token = jwt.sign(
+                { id: usuario.id, nome: usuario.nome, isAdmin: usuario.isAdmin },
+                secret,
+                { expiresIn: '8h' } // O token vale por 8 horas de trabalho
+            );
+
+            // Retorna o usuário validado e o TOKEN
+            return res.status(200).json({
+                usuario: usuarioSeguro,
+                token: token
+            });
 
         } catch (erro) {
             console.error(erro);

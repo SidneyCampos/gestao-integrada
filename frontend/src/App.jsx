@@ -12,6 +12,8 @@ import Layout from "./components/Layout";
 import AlmoxarifadoDashboard from "./pages/almoxarifado/AlmoxarifadoDashboard";
 import Ferramentas from "./pages/almoxarifado/Ferramentas";
 import Login from "./pages/Login";
+import { hasPermission } from "./utils/auth";
+import axios from "axios";
 
 /**
  * Wrapper de Rota Protegida.
@@ -20,11 +22,13 @@ import Login from "./pages/Login";
  * @param {Object} props - { usuario, setorExigido, children }
  */
 function RotaProtegida({ usuario, setorExigido, children }) {
-  if (usuario?.isAdmin) return children;
-  const temPermissao = usuario?.setores?.some(
-    (setor) => setor.nome === setorExigido,
-  );
-  if (!temPermissao) return <Navigate to="/" replace />;
+  // Utiliza a validação centralizada e segura
+  const acessoLiberado = hasPermission(usuario, setorExigido);
+  
+  if (!acessoLiberado) {
+    return <Navigate to="/" replace />;
+  }
+  
   return children;
 }
 
@@ -138,15 +142,50 @@ export default function App() {
   }, []); // O array vazio garante que isso rode apenas 1 vez quando o App abrir
 
   // ================= FUNÇÕES DE LOGIN/LOGOUT =================
-  const handleLoginSuccess = (dadosUsuario) => {
-    setUsuarioLogado(dadosUsuario);
-    localStorage.setItem("usuarioPrefHub", JSON.stringify(dadosUsuario));
+  const handleLoginSuccess = (dadosSessao) => {
+    // Agora recebemos { usuario, token } do backend
+    const { usuario, token } = dadosSessao;
+    setUsuarioLogado(usuario);
+    
+    // Salva tudo no crachá digital (localStorage)
+    localStorage.setItem("usuarioPrefHub", JSON.stringify(usuario));
+    localStorage.setItem("tokenPrefHub", token);
+
+    // Configura o axios para as próximas chamadas
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   };
 
   const handleLogout = () => {
     setUsuarioLogado(null);
     localStorage.removeItem("usuarioPrefHub");
+    localStorage.removeItem("tokenPrefHub");
+    delete axios.defaults.headers.common['Authorization'];
   };
+
+  // Configuração inicial do Axios caso já exista token salvo
+  useEffect(() => {
+    const token = localStorage.getItem("tokenPrefHub");
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+
+    // INTERCEPTOR PARA TOKEN EXPIRADO
+    // Se o backend retornar 401 ou 403 em qualquer chamada, deslogamos o usuário
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          // Se for uma tentativa de login errada, não desloga (quem trata é a tela de login)
+          if (!error.config.url.includes("/api/core/login")) {
+            handleLogout();
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
 
   // ================= RENDERIZAÇÃO DAS TELAS =================
   if (!usuarioLogado) {
