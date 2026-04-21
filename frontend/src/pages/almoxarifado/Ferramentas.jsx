@@ -42,15 +42,9 @@ export default function Ferramentas() {
     try {
       setCarregando(true);
       // Busca ferramentas, usuários e empréstimos!
-      const resFerramentas = await axios.get(
-        "http://localhost:3000/api/almoxarifado/ferramentas",
-      );
-      const resUsuarios = await axios.get(
-        "http://localhost:3000/api/core/usuarios",
-      );
-      const resEmprestimos = await axios.get(
-        "http://localhost:3000/api/almoxarifado/emprestimos",
-      );
+      const resFerramentas = await axios.get("/api/almoxarifado/ferramentas");
+      const resUsuarios = await axios.get("/api/core/usuarios");
+      const resEmprestimos = await axios.get("/api/almoxarifado/emprestimos");
 
       setFerramentas(resFerramentas.data);
       setUsuarios(resUsuarios.data);
@@ -72,7 +66,7 @@ export default function Ferramentas() {
     e.preventDefault();
     try {
       setSalvando(true);
-      await axios.post("http://localhost:3000/api/almoxarifado/ferramentas", {
+      await axios.post("/api/almoxarifado/ferramentas", {
         nome: novaFerramenta.nome,
         codigoPatrimonio: novaFerramenta.codigoPatrimonio,
         quantidadeTotal: parseInt(novaFerramenta.quantidadeTotal),
@@ -93,7 +87,7 @@ export default function Ferramentas() {
 
     try {
       setSalvando(true);
-      await axios.post("http://localhost:3000/api/almoxarifado/emprestimos", {
+      await axios.post("/api/almoxarifado/emprestimos", {
         usuarioId: parseInt(usuarioIdSelecionado),
         ferramentaId: ferramentaSelecionada.id,
         quantidade: parseInt(qtdEmprestimoSelecionada), // NOVA LINHA AQUI
@@ -121,7 +115,7 @@ export default function Ferramentas() {
       setCarregando(true);
       // Chama nossa rota PATCH que criamos no backend
       await axios.patch(
-        `http://localhost:3000/api/almoxarifado/emprestimos/${emprestimoId}/devolver`,
+        `/api/almoxarifado/emprestimos/${emprestimoId}/devolver`,
       );
       buscarDadosIniciais(); // Atualiza tudo (o status vai para devolvido e a qtd aumenta)
     } catch (erro) {

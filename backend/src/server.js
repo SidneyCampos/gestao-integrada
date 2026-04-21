@@ -1,35 +1,45 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path'); // Ferramenta nativa do Node para ler pastas
 
-// 1. IMPORTAÇÃO DOS MÓDULOS (Aqui o sistema cresce)
 const rotasAlmoxarifado = require('./modulos/almoxarifado/rotas');
-// const rotasRH = require('./modulos/rh/rotas'); // Exemplo de uso futuro
-
 const rotasCore = require('./core/rotas');
 
 const app = express();
-
-// 2. CONFIGURAÇÕES GERAIS
-// O CORS permite que a tela (Frontend, seja no PC ou no celular local) consiga conversar com este Backend
 app.use(cors());
-// Informa ao servidor que ele vai receber e enviar dados no formato JSON (padrão moderno da web)
 app.use(express.json());
 
-// 3. REGISTRO DE ROTAS (Organização por setor)
-// Toda requisição que começar com '/api/almoxarifado' será direcionada para o arquivo de rotas do almoxarifado
+// ==========================================
+// 1. ROTAS DE API (O Cérebro do Banco)
+// ==========================================
 app.use('/api/almoxarifado', rotasAlmoxarifado);
-
 app.use('/api/core', rotasCore);
 
-// Exemplo futuro para outro setor:
-// app.use('/api/rh', rotasRH); 
+// ==========================================
+// 2. CONFIGURAÇÃO DE DEPLOY (Produção)
+// ==========================================
+// Aponta para a pasta 'dist' que o Vite acabou de criar
+const frontendPath = path.join(__dirname, '../../frontend/dist');
 
+// Diz ao servidor para servir arquivos estáticos (imagens, CSS, JS) dessa pasta
+app.use(express.static(frontendPath));
 
-// 4. LIGANDO O SERVIDOR
+// "Catch-All": Qualquer URL que não for /api, ele devolve a tela do React.
+// Isso impede erros de tela em branco quando você atualiza a página (F5).
+// Catch-All moderno (Compatível com Express 5+). 
+// Usar 'app.use' sem caminho específico faz ele capturar tudo que sobrou.
+app.use((req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// ==========================================
+// 3. LIGANDO O SERVIDOR PARA A REDE LOCAL
+// ==========================================
 const PORTA = 3000;
-app.listen(PORTA, () => {
+// '0.0.0.0' é o código mágico que permite que QUALQUER aparelho no Wi-fi acesse o sistema
+app.listen(PORTA, '0.0.0.0', () => {
     console.log(`=========================================`);
-    console.log(`🚀 Sistema Gestão Integrada Inicializado`);
-    console.log(`📡 Servidor rodando na porta ${PORTA}`);
+    console.log(`🚀 Sistema Gestão Integrada - MODO PRODUÇÃO`);
+    console.log(`📡 Rodando na porta ${PORTA} e escutando a rede local`);
     console.log(`=========================================`);
 });

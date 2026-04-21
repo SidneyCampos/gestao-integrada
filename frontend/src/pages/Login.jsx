@@ -15,13 +15,10 @@ export default function Login({ onLogin }) {
 
     try {
       // Bate no nosso backend oficial enviando o que o usuário digitou
-      const resposta = await axios.post(
-        "http://localhost:3000/api/core/login",
-        {
-          login: login,
-          senha: senha,
-        },
-      );
+      const resposta = await axios.post("/api/core/login", {
+        login: login,
+        senha: senha,
+      });
 
       // Se o backend disser OK, passamos os dados do usuário para o App.jsx
       onLogin(resposta.data);

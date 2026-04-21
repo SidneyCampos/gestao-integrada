@@ -1,37 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import AlmoxarifadoDashboard from "./pages/almoxarifado/AlmoxarifadoDashboard";
 import Ferramentas from "./pages/almoxarifado/Ferramentas";
 import Login from "./pages/Login";
 
-// ========================================================
-// O SEGURANÇA DA PORTA (Route Guard)
-// ========================================================
-// Este componente envolve as rotas que precisam de proteção.
 function RotaProtegida({ usuario, setorExigido, children }) {
-  // 1. Se o usuário for Admin, a porta se abre na hora para qualquer lugar.
-  if (usuario?.isAdmin) {
-    return children;
-  }
-
-  // 2. Se não for Admin, procuramos se ele tem a credencial do Setor Exigido
+  if (usuario?.isAdmin) return children;
   const temPermissao = usuario?.setores?.some(
     (setor) => setor.nome === setorExigido,
   );
-
-  // 3. Se ele não tem permissão, jogamos ele de volta para a tela inicial "/"
-  if (!temPermissao) {
-    return <Navigate to="/" replace />;
-  }
-
-  // 4. Se ele tem permissão, a porta se abre e o conteúdo (children) é renderizado
+  if (!temPermissao) return <Navigate to="/" replace />;
   return children;
 }
 
-// ========================================================
-// TELA INICIAL
-// ========================================================
 function TelaInicial() {
   return (
     <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
@@ -46,18 +28,30 @@ function TelaInicial() {
   );
 }
 
-// ========================================================
-// APLICATIVO PRINCIPAL
-// ========================================================
 export default function App() {
-  const [usuarioLogado, setUsuarioLogado] = useState(null);
+  // ================= A MÁGICA DA MEMÓRIA (LocalStorage) =================
+  // Ao ligar o app, ele procura no "HD do navegador" se já existe um crachá salvo.
+  const [usuarioLogado, setUsuarioLogado] = useState(() => {
+    const crachaSalvo = localStorage.getItem("usuarioPrefHub");
+    return crachaSalvo ? JSON.parse(crachaSalvo) : null;
+  });
 
+  // Função para fazer Login e salvar o crachá
+  const handleLoginSuccess = (dadosUsuario) => {
+    setUsuarioLogado(dadosUsuario);
+    // Salva no HD do navegador (transformando em texto)
+    localStorage.setItem("usuarioPrefHub", JSON.stringify(dadosUsuario));
+  };
+
+  // Função para Sair e rasgar o crachá
   const handleLogout = () => {
     setUsuarioLogado(null);
+    // Apaga do HD do navegador
+    localStorage.removeItem("usuarioPrefHub");
   };
 
   if (!usuarioLogado) {
-    return <Login onLogin={(dados) => setUsuarioLogado(dados)} />;
+    return <Login onLogin={handleLoginSuccess} />;
   }
 
   return (
@@ -67,10 +61,8 @@ export default function App() {
           path="/"
           element={<Layout usuario={usuarioLogado} onLogout={handleLogout} />}
         >
-          {/* A Tela Inicial não tem restrição, qualquer logado vê */}
           <Route index element={<TelaInicial />} />
 
-          {/* ROTAS DO ALMOXARIFADO (AGORA PROTEGIDAS!) */}
           <Route
             path="almoxarifado"
             element={
@@ -94,15 +86,8 @@ export default function App() {
               </RotaProtegida>
             }
           />
-
-          {/* ROTAS FUTURAS (Exemplo de escalabilidade):
-          <Route path="rh" element={
-            <RotaProtegida usuario={usuarioLogado} setorExigido="Recursos Humanos">
-              <TelaDoRH />
-            </RotaProtegida>
-          } />
-          */}
         </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

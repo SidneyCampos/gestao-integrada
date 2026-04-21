@@ -1,0 +1,21 @@
+{
+  "short_name": "Pref Hub",
+  "name": "Prefeitura Hub - Gestão Integrada",
+  "description": "Sistema de Gestão Operacional",
+  "icons": [
+    {
+      "src": "/logo-circular.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo-circular.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "theme_color": "#2563eb"
+}
