@@ -18,6 +18,7 @@ import {
   Clock,
 } from "lucide-react";
 import axios from "axios";
+import Modal from "../../components/Modal";
 
 export default function Ferramentas() {
   // ================= ESTADOS DO SISTEMA =================
@@ -435,201 +436,176 @@ export default function Ferramentas() {
       {/* (O Código dos Modais de Cadastro e Empréstimo continuam iguais aqui embaixo, omiti no resumo para focar na aba, MAS VOCÊ DEVE MANTER O CÓDIGO DELES IGUAL ESTAVA ANTES NO FINAL DO ARQUIVO) */}
 
       {/* ================= MODAL: CADASTRAR FERRAMENTA ================= */}
-      {/* O ERRO DO TAMANHO DAS CAIXAS FOI CORRIGIDO AQUI (w-full sm:flex-1) */}
-      {modalCadastroAberto && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h2 className="text-lg font-bold text-slate-800">
-                Cadastrar Ferramenta
-              </h2>
-              <button
-                onClick={() => setModalCadastroAberto(false)}
-                className="text-slate-400 hover:bg-slate-200 p-1 rounded-md"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleCriarFerramenta} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  Descrição / Nome *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Lixadeira Angular Dewalt"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none"
-                  onChange={(e) =>
-                    setNovaFerramenta({
-                      ...novaFerramenta,
-                      nome: e.target.value,
-                    })
-                  }
-                  value={novaFerramenta.nome}
-                />
-              </div>
-
-              {/* Correção do Alinhamento Mobile! */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="w-full sm:flex-1">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">
-                    Cód. Patrimônio
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: LX-001"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none uppercase"
-                    onChange={(e) =>
-                      setNovaFerramenta({
-                        ...novaFerramenta,
-                        codigoPatrimonio: e.target.value,
-                      })
-                    }
-                    value={novaFerramenta.codigoPatrimonio}
-                  />
-                </div>
-                <div className="w-full sm:w-32">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">
-                    Quantidade *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none"
-                    onChange={(e) =>
-                      setNovaFerramenta({
-                        ...novaFerramenta,
-                        quantidadeTotal: e.target.value,
-                      })
-                    }
-                    value={novaFerramenta.quantidadeTotal}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setModalCadastroAberto(false)}
-                  className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={salvando}
-                  className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
-                >
-                  Salvar Ferramenta
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={modalCadastroAberto}
+        onClose={() => setModalCadastroAberto(false)}
+        title="Cadastrar Ferramenta"
+      >
+        <form onSubmit={handleCriarFerramenta} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Descrição / Nome *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="Ex: Lixadeira Angular Dewalt"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none"
+              onChange={(e) =>
+                setNovaFerramenta({
+                  ...novaFerramenta,
+                  nome: e.target.value,
+                })
+              }
+              value={novaFerramenta.nome}
+            />
           </div>
-        </div>
-      )}
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="w-full sm:flex-1">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Cód. Patrimônio
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: LX-001"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none uppercase"
+                onChange={(e) =>
+                  setNovaFerramenta({
+                    ...novaFerramenta,
+                    codigoPatrimonio: e.target.value,
+                  })
+                }
+                value={novaFerramenta.codigoPatrimonio}
+              />
+            </div>
+            <div className="w-full sm:w-32">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Quantidade *
+              </label>
+              <input
+                type="number"
+                min="1"
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none"
+                onChange={(e) =>
+                  setNovaFerramenta({
+                    ...novaFerramenta,
+                    quantidadeTotal: e.target.value,
+                  })
+                }
+                value={novaFerramenta.quantidadeTotal}
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setModalCadastroAberto(false)}
+              className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando}
+              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+            >
+              Salvar Ferramenta
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* ================= MODAL: EMPRESTAR FERRAMENTA ================= */}
-      {modalEmprestimoAberto && ferramentaSelecionada && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-blue-600 text-white">
-              <h2 className="text-lg font-bold">Registrar Empréstimo</h2>
-              <button
-                onClick={() => setModalEmprestimoAberto(false)}
-                className="text-white/70 hover:text-white hover:bg-blue-700 p-1 rounded-md"
+      <Modal
+        isOpen={modalEmprestimoAberto && !!ferramentaSelecionada}
+        onClose={() => setModalEmprestimoAberto(false)}
+        title="Registrar Empréstimo"
+        variant="blue"
+      >
+        <form onSubmit={handleEmprestar} className="space-y-5">
+          {/* Resumo da Ferramenta Escolhida */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-xs text-slate-500 font-semibold uppercase">
+              Ferramenta Solicitada
+            </p>
+            <p className="font-bold text-slate-800 text-lg">
+              {ferramentaSelecionada?.nome}
+            </p>
+            <p className="text-sm text-slate-600">
+              Patrimônio: {ferramentaSelecionada?.codigoPatrimonio || "S/N"}
+            </p>
+          </div>
+
+          {/* Seleção de Funcionário e Quantidade */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="w-full sm:flex-1">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Para qual funcionário?
+              </label>
+              <select
+                required
+                value={usuarioIdSelecionado}
+                onChange={(e) => setUsuarioIdSelecionado(e.target.value)}
+                className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500 font-medium text-slate-700"
               >
-                <X className="w-5 h-5" />
-              </button>
+                <option value="" disabled>
+                  Selecione da lista...
+                </option>
+                {usuarios.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nome} (Setor:{" "}
+                    {u.setores && u.setores.length > 0
+                      ? u.setores.map((s) => s.nome).join(", ")
+                      : "Geral"}
+                    )
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <form onSubmit={handleEmprestar} className="p-6 space-y-5">
-              {/* Resumo da Ferramenta Escolhida */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <p className="text-xs text-slate-500 font-semibold uppercase">
-                  Ferramenta Solicitada
-                </p>
-                <p className="font-bold text-slate-800 text-lg">
-                  {ferramentaSelecionada.nome}
-                </p>
-                <p className="text-sm text-slate-600">
-                  Patrimônio: {ferramentaSelecionada.codigoPatrimonio || "S/N"}
-                </p>
-              </div>
-
-              {/* Seleção de Funcionário e Quantidade */}
-              {/* CORREÇÃO AQUI: flex-col para empilhar no celular pequeno, sm:flex-row no computador */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* w-full no celular, flex-1 no computador */}
-                <div className="w-full sm:flex-1">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">
-                    Para qual funcionário?
-                  </label>
-                  <select
-                    required
-                    value={usuarioIdSelecionado}
-                    onChange={(e) => setUsuarioIdSelecionado(e.target.value)}
-                    className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500 font-medium text-slate-700"
-                  >
-                    <option value="" disabled>
-                      Selecione da lista...
-                    </option>
-                    {usuarios.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.nome} (Setor:{" "}
-                        {u.setores && u.setores.length > 0
-                          ? u.setores.map((s) => s.nome).join(", ")
-                          : "Geral"}
-                        )
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* NOVO CAMPO: Quantidade de Saída (w-full no celular, w-24 no PC) */}
-                <div className="w-full sm:w-24">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">
-                    Qtd.
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max={ferramentaSelecionada.qtdDisponivel}
-                    required
-                    className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                    onChange={(e) =>
-                      setQtdEmprestimoSelecionada(e.target.value)
-                    }
-                    value={qtdEmprestimoSelecionada}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setModalEmprestimoAberto(false)}
-                  className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={salvando}
-                  className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                >
-                  {salvando ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Confirmar Saída"
-                  )}
-                </button>
-              </div>
-            </form>
+            <div className="w-full sm:w-24">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Qtd.
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={ferramentaSelecionada?.qtdDisponivel}
+                required
+                className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) =>
+                  setQtdEmprestimoSelecionada(e.target.value)
+                }
+                value={qtdEmprestimoSelecionada}
+              />
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="pt-4 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setModalEmprestimoAberto(false)}
+              className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando}
+              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              {salvando ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                "Confirmar Saída"
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

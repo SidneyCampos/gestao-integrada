@@ -94,7 +94,6 @@ function TelaInicial({ usuario }) {
   );
 }
 
-// ... (mantenha os imports e a função TelaInicial e RotaProtegida iguais)
 
 // ========================================================
 // APLICATIVO PRINCIPAL E GERENCIADOR DE ESTADO

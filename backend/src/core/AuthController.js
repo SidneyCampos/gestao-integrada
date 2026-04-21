@@ -51,7 +51,7 @@ class AuthController {
             });
 
         } catch (erro) {
-            console.error(erro);
+            console.error("[AUTH_LOGIN_ERROR]", erro);
             return res.status(500).json({ erro: "Erro interno no servidor de autenticação." });
         }
     }

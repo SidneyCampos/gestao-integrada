@@ -23,7 +23,7 @@ class UsuarioController {
             });
             return res.status(200).json(usuarios);
         } catch (erro) {
-            console.error(erro);
+            console.error("[USER_LIST_ERROR]", erro);
             return res.status(500).json({ erro: "Erro ao buscar usuários" });
         }
     }
@@ -51,8 +51,8 @@ class UsuarioController {
 
             return res.status(200).json({ mensagem: "Senha alterada com sucesso!" });
         } catch (erro) {
-            console.error(erro);
-            return res.status(500).json({ erro: "Erro interno ao alterar a senha." });
+            console.error("[AUTH_LOGIN_ERROR]", erro);
+            return res.status(500).json({ erro: "Erro interno no servidor de autenticação." });
         }
     }
 }

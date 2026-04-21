@@ -76,6 +76,7 @@ class EmprestimoController {
 
             return res.status(201).json(resultado[0]);
         } catch (erro) {
+            console.error("[ALMOX_EMPRESTAR_ERROR]", erro);
             return res.status(500).json({ erro: "Erro ao realizar empréstimo." });
         }
     }
@@ -112,6 +113,7 @@ class EmprestimoController {
 
             return res.status(200).json(resultado[0]);
         } catch (erro) {
+            console.error("[ALMOX_DEVOLVER_ERROR]", erro);
             return res.status(500).json({ erro: "Erro ao devolver." });
         }
     }
