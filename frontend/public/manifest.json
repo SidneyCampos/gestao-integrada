@@ -1,21 +1,26 @@
 {
   "short_name": "Pref Hub",
-  "name": "Prefeitura Hub - Gestão Integrada",
-  "description": "Sistema de Gestão Operacional",
+  "name": "Prefeitura Hub",
+  "description": "Sistema de Gestão",
   "icons": [
     {
       "src": "/logo-circular.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "/logo-circular.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
-  "background_color": "#0f172a",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#2563eb"
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary"
 }
