@@ -1,3 +1,11 @@
+/**
+ * @file prisma.js
+ * @description Configuração do ORM Prisma para acesso ao banco de dados.
+ * Implementa o padrão de design Singleton, garantindo que toda a aplicação
+ * utilize uma única instância de conexão ativa com o banco, otimizando recursos.
+ * @module Core/Prisma
+ */
+
 // Importamos o cliente do Prisma que foi gerado no comando 'db push'
 const { PrismaClient } = require('@prisma/client');
 

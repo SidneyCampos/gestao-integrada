@@ -1,3 +1,11 @@
+/**
+ * @file App.jsx
+ * @description Orquestrador principal da interface de usuário.
+ * Gerencia o roteamento (React Router), controle de sessão persistente no localStorage,
+ * e protege rotas baseadas nos setores (permissões) do usuário logado.
+ * @module Frontend/App
+ */
+
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
@@ -5,6 +13,12 @@ import AlmoxarifadoDashboard from "./pages/almoxarifado/AlmoxarifadoDashboard";
 import Ferramentas from "./pages/almoxarifado/Ferramentas";
 import Login from "./pages/Login";
 
+/**
+ * Wrapper de Rota Protegida.
+ * Verifica se o usuário logado tem permissão (setor) para acessar a página filha.
+ * Se for admin, o acesso é liberado automaticamente. Caso não tenha acesso, redireciona para a home.
+ * @param {Object} props - { usuario, setorExigido, children }
+ */
 function RotaProtegida({ usuario, setorExigido, children }) {
   if (usuario?.isAdmin) return children;
   const temPermissao = usuario?.setores?.some(
@@ -17,6 +31,10 @@ function RotaProtegida({ usuario, setorExigido, children }) {
 // ========================================================
 // TELA INICIAL (DASHBOARD GERAL)
 // ========================================================
+/**
+ * Componente da Tela Inicial exibida após o login.
+ * Mostra uma saudação personalizada e curiosidades randômicas da cidade para engajar o servidor.
+ */
 function TelaInicial({ usuario }) {
   // Lista de curiosidades para engajar o servidor
   const curiosidades = [

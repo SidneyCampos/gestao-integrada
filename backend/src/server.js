@@ -1,3 +1,10 @@
+/**
+ * @file server.js
+ * @description Ponto de entrada (Entrypoint) principal do backend.
+ * Configura o servidor Express, middlewares globais, rotas da API e o fornecimento de arquivos estáticos (Frontend).
+ * @module Server
+ */
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path'); // Ferramenta nativa do Node para ler pastas

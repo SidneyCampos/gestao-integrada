@@ -1,3 +1,10 @@
+/**
+ * @file Ferramentas.jsx
+ * @description Interface completa para gestão de inventário e empréstimos de ferramentas.
+ * Possui abas de "Estoque" (com CRUD de ferramentas) e "Empréstimos" (histórico de saídas).
+ * @module Frontend/Pages/Almoxarifado/Ferramentas
+ */
+
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -38,6 +45,10 @@ export default function Ferramentas() {
   });
 
   // ================= FUNÇÕES DE BUSCA (API) =================
+  /**
+   * Busca no banco de dados todas as ferramentas, usuários (para listar no select) e empréstimos.
+   * Executada sempre que a tela carrega e após cada operação de cadastro/empréstimo.
+   */
   const buscarDadosIniciais = async () => {
     try {
       setCarregando(true);
@@ -62,6 +73,9 @@ export default function Ferramentas() {
   }, []);
 
   // ================= FUNÇÕES DE AÇÃO =================
+  /**
+   * Envia os dados do formulário do modal para a API criar uma nova ferramenta.
+   */
   const handleCriarFerramenta = async (e) => {
     e.preventDefault();
     try {
@@ -81,6 +95,9 @@ export default function Ferramentas() {
     }
   };
 
+  /**
+   * Registra a saída de uma ferramenta no banco e associa a um funcionário.
+   */
   const handleEmprestar = async (e) => {
     e.preventDefault();
     if (!usuarioIdSelecionado) return alert("Selecione um funcionário.");
@@ -108,6 +125,10 @@ export default function Ferramentas() {
   };
 
   // NOVA FUNÇÃO: Devolver Ferramenta
+  /**
+   * Dispara a devolução de uma ferramenta pendente, restaurando o estoque.
+   * @param {number} emprestimoId - ID do empréstimo a ser finalizado.
+   */
   const handleDevolver = async (emprestimoId) => {
     if (!window.confirm("Confirmar a devolução desta ferramenta?")) return;
 

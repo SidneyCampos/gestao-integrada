@@ -1,6 +1,20 @@
+/**
+ * @file AuthController.js
+ * @description Controlador responsável pela lógica de autenticação do sistema.
+ * Gerencia a validação de credenciais de usuários (Login) e garante 
+ * os requisitos iniciais de segurança antes da emissão da sessão.
+ * @module Core/AuthController
+ */
+
 const prisma = require('./prisma');
 
 class AuthController {
+    /**
+     * Valida as credenciais fornecidas e retorna os dados de sessão do usuário.
+     * @param {Object} req - Objeto de requisição do Express. Deve conter `login` e `senha` no body.
+     * @param {Object} res - Objeto de resposta do Express.
+     * @returns {Object} JSON contendo os dados do usuário (exceto a senha) e status HTTP apropriado.
+     */
     static async login(req, res) {
         try {
             const { login, senha } = req.body;

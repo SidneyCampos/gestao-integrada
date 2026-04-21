@@ -1,3 +1,11 @@
+/**
+ * @file Layout.jsx
+ * @description Estrutura visual base (Shell) da aplicação.
+ * Contém o cabeçalho (Header), barra lateral de navegação (Sidebar Desktop) e barra inferior (Mobile).
+ * Também gerencia o Modal de Perfil de Usuário e alteração de senhas.
+ * @module Frontend/Components/Layout
+ */
+
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 // O GRANDE CULPADO ESTAVA AQUI: Faltava o X na lista de ícones!
@@ -15,6 +23,11 @@ const modulosDisponiveis = [
   { nome: "Frota de Veículos", path: "/frota", icone: Car, isPrimary: false },
 ];
 
+/**
+ * Componente principal de Layout que engloba as telas filhas.
+ * Responsável por renderizar dinamicamente os menus baseados nas permissões (setores) do usuário.
+ * @param {Object} props - { usuario (dados do usuário logado), onLogout (função para encerrar sessão) }
+ */
 export default function Layout({ usuario, onLogout }) {
   const location = useLocation();
   const isActive = (path) => location.pathname.startsWith(path);
@@ -36,6 +49,10 @@ export default function Layout({ usuario, onLogout }) {
   const modulosSecundarios = modulosPermitidos.filter((m) => !m.isPrimary);
 
   // FUNÇÃO DE ALTERAR SENHA
+  /**
+   * Envia uma requisição PATCH para a API atualizar a senha do usuário logado.
+   * Valida se a nova senha coincide com a confirmação antes de enviar.
+   */
   const handleMudarSenha = async (e) => {
     e.preventDefault();
     if (novaSenha !== confirmarSenha) {

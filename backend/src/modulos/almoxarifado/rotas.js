@@ -1,3 +1,10 @@
+/**
+ * @file rotas.js (Almoxarifado)
+ * @description Define as rotas específicas para o módulo de Almoxarifado.
+ * Mapeia as URLs de ferramentas e empréstimos para os respectivos Controllers.
+ * @module Almoxarifado/Rotas
+ */
+
 const express = require('express');
 const router = express.Router();
 
