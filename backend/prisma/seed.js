@@ -2,25 +2,13 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Iniciando semeadura do banco de dados...');
+  console.log('Iniciando semeadura do banco de dados (PRODUÇÃO)...');
 
   // 1. Criar Setores
   const setorTI = await prisma.setor.upsert({
     where: { nome: 'TI' },
     update: {},
     create: { nome: 'TI' },
-  });
-
-  const setorManutencao = await prisma.setor.upsert({
-    where: { nome: 'Manutenção' },
-    update: {},
-    create: { nome: 'Manutenção' },
-  });
-
-  const setorAdm = await prisma.setor.upsert({
-    where: { nome: 'Administração' },
-    update: {},
-    create: { nome: 'Administração' },
   });
 
   const setorAlmoxarifado = await prisma.setor.upsert({
@@ -32,79 +20,69 @@ async function main() {
   console.log('Setores criados/verificados.');
 
   // 2. Criar Usuários
-  const joao = await prisma.usuario.create({
-    data: {
-      nome: 'João da Silva',
-      telefone: '11999999999',
-      login: 'joao.silva',
-      senha: '123',
+  
+  // Usuário Admin
+  await prisma.usuario.upsert({
+    where: { login: 'admin' },
+    update: {},
+    create: {
+      nome: 'Administrador Geral',
+      login: 'admin',
+      senha: 'admin',
+      isAdmin: true,
+      isSistema: false,
+    },
+  });
+
+  // Usuário TI
+  await prisma.usuario.upsert({
+    where: { login: 'ti' },
+    update: {},
+    create: {
+      nome: 'Equipe de TI',
+      login: 'ti',
+      senha: 'ti', // Coloquei a senha como 'ti' para facilitar, mas pode trocar no painel depois.
       isAdmin: false,
-      isSistema: true,
+      isSistema: false,
       setores: {
-        connect: [{ id: setorManutencao.id }, { id: setorAlmoxarifado.id }]
+        connect: [{ id: setorAlmoxarifado.id }, { id: setorTI.id }]
       }
     },
   });
 
-  const maria = await prisma.usuario.create({
-    data: {
-      nome: 'Maria Oliveira',
-      telefone: '11888888888',
-      login: 'maria.adm',
-      senha: '123',
-      isAdmin: true,
-      isSistema: true,
+  // Usuário Rafael Valle
+  await prisma.usuario.upsert({
+    where: { login: 'rafael.valle' },
+    update: {},
+    create: {
+      nome: 'Rafael Valle',
+      login: 'rafael.valle',
+      senha: 'mudar123',
+      isAdmin: false,
+      isSistema: false,
       setores: {
-        connect: [{ id: setorAdm.id }, { id: setorTI.id }, { id: setorAlmoxarifado.id }]
+        connect: [{ id: setorAlmoxarifado.id }]
+      }
+    },
+  });
+
+  // Usuário Admilson Martins
+  await prisma.usuario.upsert({
+    where: { login: 'admilson.martins' },
+    update: {},
+    create: {
+      nome: 'Admilson Martins',
+      login: 'admilson.martins',
+      senha: 'mudar123',
+      isAdmin: false,
+      isSistema: false,
+      setores: {
+        connect: [{ id: setorAlmoxarifado.id }]
       }
     },
   });
 
   console.log('Usuários criados.');
-
-  // 3. Criar Ferramentas
-  const furadeira = await prisma.ferramenta.create({
-    data: {
-      nome: 'Furadeira Bosch 500W',
-      codigoPatrimonio: 'PAT-001',
-      quantidadeTotal: 5,
-      qtdDisponivel: 4,
-    },
-  });
-
-  const multimetro = await prisma.ferramenta.create({
-    data: {
-      nome: 'Multímetro Digital Fluke',
-      codigoPatrimonio: 'PAT-002',
-      quantidadeTotal: 2,
-      qtdDisponivel: 2,
-    },
-  });
-
-  const jogoChaves = await prisma.ferramenta.create({
-    data: {
-      nome: 'Jogo de Chaves de Fenda',
-      codigoPatrimonio: 'PAT-003',
-      quantidadeTotal: 10,
-      qtdDisponivel: 10,
-    },
-  });
-
-  console.log('Ferramentas criadas.');
-
-  // 4. Criar Empréstimos
-  await prisma.emprestimo.create({
-    data: {
-      usuarioId: joao.id,
-      ferramentaId: furadeira.id,
-      quantidade: 1,
-      status: 'PENDENTE',
-      dataSaida: new Date(),
-    },
-  });
-
-  console.log('Empréstimos criados.');
-
   console.log('Semeadura concluída com sucesso!');
 }
 
