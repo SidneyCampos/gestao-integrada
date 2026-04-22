@@ -44,9 +44,20 @@ export default function Layout({ usuario, onLogout }) {
 
   // Memoriza o cálculo da navegação para não reprocessar a cada letra digitada nos inputs/modais
   const { modulosPermitidos, modulosPrimarios, modulosSecundarios } = useMemo(() => {
+    // 1. Filtra os módulos padrão por permissão de setor
     const permitidos = modulosDisponiveis.filter((modulo) => 
       hasPermission(usuario, modulo.nome)
     );
+
+    // 2. Se for Administrador, injeta o módulo de gestão de contas
+    if (usuario?.isAdmin) {
+      permitidos.push({
+        nome: "Usuários",
+        path: "/usuarios",
+        icone: Users,
+        isPrimary: false,
+      });
+    }
 
     return {
       modulosPermitidos: permitidos,

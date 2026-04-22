@@ -5,7 +5,7 @@
  * @module Frontend/Pages/Almoxarifado/Ferramentas
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Plus,
@@ -16,6 +16,7 @@ import {
   ArrowRightLeft,
   CheckCircle,
   Clock,
+  Trash2,
 } from "lucide-react";
 import axios from "axios";
 import Modal from "../../components/Modal";
@@ -26,14 +27,17 @@ export default function Ferramentas() {
 
   const [ferramentas, setFerramentas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [funcionariosExternos, setFuncionariosExternos] = useState([]);
   const [emprestimos, setEmprestimos] = useState([]); // Guarda o histórico do banco
 
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [termoBusca, setTermoBusca] = useState("");
 
   const [menuAbertoId, setMenuAbertoId] = useState(null);
   const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
+  const [modalRapidoFuncionario, setModalRapidoFuncionario] = useState(false);
 
   const [ferramentaSelecionada, setFerramentaSelecionada] = useState(null);
   const [usuarioIdSelecionado, setUsuarioIdSelecionado] = useState("");
@@ -56,10 +60,13 @@ export default function Ferramentas() {
       // Busca ferramentas, usuários e empréstimos!
       const resFerramentas = await axios.get("/api/almoxarifado/ferramentas");
       const resUsuarios = await axios.get("/api/core/usuarios");
+      const resFuncionarios = await axios.get("/api/almoxarifado/funcionarios");
       const resEmprestimos = await axios.get("/api/almoxarifado/emprestimos");
 
       setFerramentas(resFerramentas.data);
-      setUsuarios(resUsuarios.data);
+      // Unifica os usuários do sistema com os funcionários externos para o Almoxarifado
+      setUsuarios([...resUsuarios.data, ...resFuncionarios.data]);
+      setFuncionariosExternos(resFuncionarios.data);
       setEmprestimos(resEmprestimos.data);
     } catch (erro) {
       console.error(erro);
@@ -96,9 +103,6 @@ export default function Ferramentas() {
     }
   };
 
-  /**
-   * Registra a saída de uma ferramenta no banco e associa a um funcionário.
-   */
   const handleEmprestar = async (e) => {
     e.preventDefault();
     if (!usuarioIdSelecionado) return alert("Selecione um funcionário.");
@@ -108,7 +112,7 @@ export default function Ferramentas() {
       await axios.post("/api/almoxarifado/emprestimos", {
         usuarioId: parseInt(usuarioIdSelecionado),
         ferramentaId: ferramentaSelecionada.id,
-        quantidade: parseInt(qtdEmprestimoSelecionada), // NOVA LINHA AQUI
+        quantidade: parseInt(qtdEmprestimoSelecionada),
       });
       setModalEmprestimoAberto(false);
       setUsuarioIdSelecionado("");
@@ -122,6 +126,45 @@ export default function Ferramentas() {
       );
     } finally {
       setSalvando(false);
+    }
+  };
+
+  /**
+   * Cadastro rápido de funcionário externo (sem acesso ao sistema).
+   */
+  const handleCriarFuncionarioRapido = async (e) => {
+    e.preventDefault();
+    const nome = e.target.nome.value;
+    const telefone = e.target.telefone.value;
+
+    try {
+      setSalvando(true);
+      const res = await axios.post("/api/almoxarifado/funcionarios", { nome, telefone });
+      // Atualiza a lista local e já seleciona o novo funcionário
+      setUsuarios([...usuarios, res.data]);
+      setUsuarioIdSelecionado(res.data.id);
+      setModalRapidoFuncionario(false);
+    } catch (erro) {
+      alert("Erro ao cadastrar funcionário.");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  /**
+   * Remove um funcionário externo do banco.
+   */
+  const handleDeletarFuncionario = async (id) => {
+    if (!window.confirm("ATENÇÃO: Você tem certeza que deseja excluir este funcionário? Esta ação não pode ser desfeita.")) return;
+
+    try {
+      setCarregando(true);
+      await axios.delete(`/api/almoxarifado/funcionarios/${id}`);
+      buscarDadosIniciais();
+    } catch (erro) {
+      alert(erro.response?.data?.erro || "Erro ao excluir funcionário.");
+    } finally {
+      setCarregando(false);
     }
   };
 
@@ -157,6 +200,28 @@ export default function Ferramentas() {
       data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     );
   };
+
+  // ================= LÓGICA DE BUSCA FILTRADA =================
+  const ferramentasFiltradas = useMemo(() => {
+    return ferramentas.filter(f => 
+      f.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      (f.codigoPatrimonio && f.codigoPatrimonio.toLowerCase().includes(termoBusca.toLowerCase()))
+    );
+  }, [ferramentas, termoBusca]);
+
+  const emprestimosFiltrados = useMemo(() => {
+    return emprestimos.filter(e => 
+      e.usuario?.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      e.ferramenta?.nome.toLowerCase().includes(termoBusca.toLowerCase())
+    );
+  }, [emprestimos, termoBusca]);
+
+  const equipeFiltrada = useMemo(() => {
+    return funcionariosExternos.filter(f => 
+      f.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      (f.telefone && f.telefone.includes(termoBusca))
+    );
+  }, [funcionariosExternos, termoBusca]);
 
   return (
     <div className="space-y-6 relative">
@@ -199,13 +264,19 @@ export default function Ferramentas() {
         >
           Acervo e Estoque
         </button>
-        <button
-          onClick={() => setAbaAtiva("emprestimos")}
-          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${abaAtiva === "emprestimos" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-        >
-          Empréstimos e Histórico
-        </button>
-      </div>
+          <button
+            onClick={() => setAbaAtiva("emprestimos")}
+            className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${abaAtiva === "emprestimos" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+          >
+            Histórico / Devolução
+          </button>
+          <button
+            onClick={() => setAbaAtiva("equipe")}
+            className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${abaAtiva === "equipe" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+          >
+            Equipe Externa
+          </button>
+        </div>
 
       {/* ================= ÁREA DE CONTEÚDO (TABELA OU CARTÕES) ================= */}
       <div className="bg-transparent lg:bg-white lg:border lg:border-slate-200 rounded-xl lg:shadow-sm overflow-visible pb-32 lg:pb-0">
@@ -214,11 +285,58 @@ export default function Ferramentas() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Pesquisar..."
-              className="w-full pl-9 pr-4 py-3 lg:py-2 text-sm border border-slate-300 rounded-lg lg:rounded-md outline-none bg-white"
+              placeholder={`Pesquisar em ${abaAtiva === 'estoque' ? 'Estoque' : abaAtiva === 'equipe' ? 'Equipe' : 'Histórico'}...`}
+              value={termoBusca}
+              onChange={(e) => setTermoBusca(e.target.value)}
+              className="w-full pl-9 pr-4 py-3 lg:py-2 text-sm border border-slate-300 rounded-lg lg:rounded-md outline-none bg-white focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
         </div>
+
+      {/* ================= ABA: EQUIPE EXTERNA ================= */}
+      {abaAtiva === "equipe" && (
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in duration-300">
+          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+            <h3 className="font-bold text-slate-800">Funcionários Cadastrados</h3>
+            <p className="text-xs text-slate-500">Pessoas que não acessam o sistema, mas retiram ferramentas.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">
+                  <th className="px-6 py-3">Nome</th>
+                  <th className="px-6 py-3">Telefone</th>
+                  <th className="px-6 py-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {equipeFiltrada.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="px-6 py-10 text-center text-slate-400 italic">
+                      {termoBusca ? "Nenhum funcionário encontrado com esse termo." : "Nenhum funcionário externo cadastrado."}
+                    </td>
+                  </tr>
+                ) : (
+                  equipeFiltrada.map(f => (
+                    <tr key={f.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-slate-700">{f.nome}</td>
+                      <td className="px-6 py-4 text-slate-500 text-sm">{f.telefone || "---"}</td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          onClick={() => handleDeletarFuncionario(f.id)}
+                          className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
         {carregando ? (
           <div className="p-8 text-center text-slate-500 animate-pulse">
@@ -248,7 +366,14 @@ export default function Ferramentas() {
                   </tr>
                 </thead>
                 <tbody className="grid grid-cols-1 md:grid-cols-2 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
-                  {ferramentas.map((ferramenta) => (
+                  {ferramentasFiltradas.length === 0 && (
+                    <tr className="lg:table-row">
+                       <td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic">
+                         Nenhuma ferramenta encontrada.
+                       </td>
+                    </tr>
+                  )}
+                  {ferramentasFiltradas.map((ferramenta) => (
                     <tr
                       key={ferramenta.id}
                       className="block lg:table-row bg-white border border-slate-200 lg:border-none rounded-xl lg:rounded-none shadow-sm lg:shadow-none hover:bg-slate-50 relative"
@@ -359,18 +484,18 @@ export default function Ferramentas() {
                   </tr>
                 </thead>
                 <tbody className="grid grid-cols-1 md:grid-cols-2 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
-                  {emprestimos.length === 0 && (
+                  {emprestimosFiltrados.length === 0 && (
                     <tr className="block lg:table-row">
                       <td
                         colSpan="5"
                         className="p-8 text-center text-slate-500 block lg:table-cell"
                       >
-                        Nenhum registro de empréstimo encontrado.
+                        {termoBusca ? "Nenhum resultado para esta busca." : "Nenhum registro de empréstimo encontrado."}
                       </td>
                     </tr>
                   )}
 
-                  {emprestimos.map((emp) => (
+                  {emprestimosFiltrados.map((emp) => (
                     <tr
                       key={emp.id}
                       className="block lg:table-row bg-white border border-slate-200 lg:border-none rounded-xl lg:rounded-none shadow-sm lg:shadow-none hover:bg-slate-50 relative"
@@ -545,25 +670,31 @@ export default function Ferramentas() {
               <label className="block text-sm font-semibold text-slate-700 mb-1">
                 Para qual funcionário?
               </label>
-              <select
-                required
-                value={usuarioIdSelecionado}
-                onChange={(e) => setUsuarioIdSelecionado(e.target.value)}
-                className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500 font-medium text-slate-700"
-              >
-                <option value="" disabled>
-                  Selecione da lista...
-                </option>
-                {usuarios.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.nome} (Setor:{" "}
-                    {u.setores && u.setores.length > 0
-                      ? u.setores.map((s) => s.nome).join(", ")
-                      : "Geral"}
-                    )
+              <div className="flex items-center gap-2">
+                <select
+                  required
+                  value={usuarioIdSelecionado}
+                  onChange={(e) => setUsuarioIdSelecionado(e.target.value)}
+                  className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500 font-medium text-slate-700"
+                >
+                  <option value="" disabled>
+                    Selecione da lista...
                   </option>
-                ))}
-              </select>
+                  {usuarios.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.nome} {u.isSistema ? "(Servidor)" : "(Externo)"}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setModalRapidoFuncionario(true)}
+                  className="p-3 sm:p-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
+                  title="Novo Funcionário Externo"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="w-full sm:w-24">
@@ -602,6 +733,33 @@ export default function Ferramentas() {
               ) : (
                 "Confirmar Saída"
               )}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ================= MODAL: CADASTRO RÁPIDO DE FUNCIONÁRIO ================= */}
+      <Modal
+        isOpen={modalRapidoFuncionario}
+        onClose={() => setModalRapidoFuncionario(false)}
+        title="Cadastrar Funcionário Externo"
+      >
+        <form onSubmit={handleCriarFuncionarioRapido} className="space-y-4">
+          <p className="text-xs text-slate-500">
+            Este cadastro é apenas para controle de empréstimos. Este funcionário **não** terá acesso ao sistema.
+          </p>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Nome Completo</label>
+            <input name="nome" type="text" required className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Telefone / WhatsApp</label>
+            <input name="telefone" type="text" className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+          </div>
+          <div className="pt-2 flex justify-end gap-3">
+            <button type="button" onClick={() => setModalRapidoFuncionario(false)} className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg">Cancelar</button>
+            <button type="submit" disabled={salvando} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md">
+              {salvando ? "Salvando..." : "Confirmar Cadastro"}
             </button>
           </div>
         </form>

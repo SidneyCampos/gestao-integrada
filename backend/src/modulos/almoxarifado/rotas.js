@@ -9,8 +9,8 @@ const express = require('express');
 const router = express.Router();
 
 const FerramentaController = require('./FerramentaController');
-// Importando o novo Controller
 const EmprestimoController = require('./EmprestimoController');
+const FuncionarioController = require('./FuncionarioController');
 
 // --- Rotas de Ferramentas ---
 router.get('/ferramentas', FerramentaController.listar);
@@ -23,5 +23,10 @@ router.get('/emprestimos', EmprestimoController.listar);
 
 router.post('/emprestimos', EmprestimoController.emprestar);
 router.patch('/emprestimos/:id/devolver', EmprestimoController.devolver);
+
+// --- Rotas de Funcionários Externos ---
+router.get('/funcionarios', FuncionarioController.listar);
+router.post('/funcionarios', FuncionarioController.criar);
+router.delete('/funcionarios/:id', FuncionarioController.deletar);
 
 module.exports = router;

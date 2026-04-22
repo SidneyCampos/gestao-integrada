@@ -12,6 +12,7 @@ import Layout from "./components/Layout";
 import AlmoxarifadoDashboard from "./pages/almoxarifado/AlmoxarifadoDashboard";
 import Ferramentas from "./pages/almoxarifado/Ferramentas";
 import Login from "./pages/Login";
+import Usuarios from "./pages/Usuarios";
 import { hasPermission } from "./utils/auth";
 import axios from "axios";
 
@@ -220,6 +221,18 @@ export default function App() {
                 setorExigido="Almoxarifado"
               >
                 <Ferramentas />
+              </RotaProtegida>
+            }
+          />
+
+          <Route
+            path="usuarios"
+            element={
+              <RotaProtegida
+                usuario={usuarioLogado}
+                setorExigido="ADMIN_ONLY" // Truque: isAdmin cuida disso
+              >
+                <Usuarios />
               </RotaProtegida>
             }
           />

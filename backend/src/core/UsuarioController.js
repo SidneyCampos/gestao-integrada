@@ -18,6 +18,7 @@ class UsuarioController {
     static async listar(req, res) {
         try {
             const usuarios = await prisma.usuario.findMany({
+                where: { isSistema: true }, // Lista apenas quem tem acesso ao sistema
                 include: { setores: true },
                 orderBy: { nome: 'asc' }
             });
@@ -25,6 +26,42 @@ class UsuarioController {
         } catch (erro) {
             console.error("[USER_LIST_ERROR]", erro);
             return res.status(500).json({ erro: "Erro ao buscar usuários" });
+        }
+    }
+
+    /**
+     * Cadastra um novo usuário no sistema.
+     * Associa o usuário aos setores informados.
+     */
+    static async criar(req, res) {
+        try {
+            const { nome, login, senha, isAdmin, setoresIds } = req.body;
+
+            // Validação básica
+            if (!nome || !login || !senha) {
+                return res.status(400).json({ erro: "Nome, Login e Senha são obrigatórios." });
+            }
+
+            const novoUsuario = await prisma.usuario.create({
+                data: {
+                    nome,
+                    login,
+                    senha,
+                    isAdmin: !!isAdmin,
+                    setores: {
+                        connect: setoresIds ? setoresIds.map(id => ({ id: parseInt(id) })) : []
+                    }
+                },
+                include: { setores: true }
+            });
+
+            return res.status(201).json(novoUsuario);
+        } catch (erro) {
+            console.error("[USER_CREATE_ERROR]", erro);
+            if (erro.code === 'P2002') {
+                return res.status(400).json({ erro: "Este login já está em uso." });
+            }
+            return res.status(500).json({ erro: "Erro ao cadastrar usuário." });
         }
     }
 
@@ -53,6 +90,29 @@ class UsuarioController {
         } catch (erro) {
             console.error("[AUTH_LOGIN_ERROR]", erro);
             return res.status(500).json({ erro: "Erro interno no servidor de autenticação." });
+        }
+    }
+
+    /**
+     * Remove um usuário do sistema.
+     */
+    static async deletar(req, res) {
+        try {
+            const id = parseInt(req.params.id);
+
+            // Não permite o admin se deletar sozinho para não travar o sistema
+            if (req.usuario.id === id) {
+                return res.status(400).json({ erro: "Você não pode excluir sua própria conta." });
+            }
+
+            await prisma.usuario.delete({
+                where: { id: id }
+            });
+
+            return res.status(200).json({ mensagem: "Usuário removido com sucesso." });
+        } catch (erro) {
+            console.error("[USER_DELETE_ERROR]", erro);
+            return res.status(500).json({ erro: "Erro ao excluir usuário." });
         }
     }
 }
