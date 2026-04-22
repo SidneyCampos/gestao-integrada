@@ -13,21 +13,25 @@ cd backend
 call npm install
 
 echo.
-echo [3/5] Atualizando Banco de Dados...
+echo [3/5] Parando sistema para manutencao...
+call pm2 stop Gestao-Integrada
+
+echo.
+echo [4/5] Atualizando Banco de Dados...
 call npx prisma generate
 call npx prisma db push
 cd ..
 
 echo.
-echo [4/5] Instalando e Compilando Frontend...
+echo [5/5] Instalando e Compilando Frontend...
 cd frontend
 call npm install
 call npm run build
 cd ..
 
 echo.
-echo [5/5] Reiniciando o sistema no PM2...
-call pm2 restart Gestao-Integrada
+echo [6/5] Reiniciando o sistema no PM2...
+call pm2 start backend/src/server.js --name "Gestao-Integrada"
 
 echo.
 echo ===================================================
