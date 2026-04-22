@@ -20,6 +20,6 @@ router.post('/login', AuthController.login);
 router.patch('/usuarios/:id/senha', authMiddleware, UsuarioController.alterarSenha);
 
 // Rota de setores (para preencher o dropdown no cadastro de usuários)
-router.get('/setores', authMiddleware, adminMiddleware, SetorController.listar);
+router.get('/setores', authMiddleware, SetorController.listar);
 
 module.exports = router;

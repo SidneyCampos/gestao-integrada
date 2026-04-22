@@ -9,7 +9,7 @@
 import { useState, useMemo } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 // O GRANDE CULPADO ESTAVA AQUI: Faltava o X na lista de ícones!
-import { Wrench, Users, Car, LogOut, MoreHorizontal, X } from "lucide-react";
+import { Wrench, Users, Car, LogOut, MoreHorizontal, X, Cpu } from "lucide-react";
 import axios from "axios";
 import { hasPermission } from "../utils/auth";
 import Modal from "./Modal";
@@ -19,6 +19,12 @@ const modulosDisponiveis = [
     nome: "Almoxarifado",
     path: "/almoxarifado",
     icone: Wrench,
+    isPrimary: true,
+  },
+  {
+    nome: "TI",
+    path: "/ti/informatica",
+    icone: Cpu,
     isPrimary: true,
   },
   { nome: "Recursos Humanos", path: "/rh", icone: Users, isPrimary: false },
@@ -45,7 +51,7 @@ export default function Layout({ usuario, onLogout }) {
   // Memoriza o cálculo da navegação para não reprocessar a cada letra digitada nos inputs/modais
   const { modulosPermitidos, modulosPrimarios, modulosSecundarios } = useMemo(() => {
     // 1. Filtra os módulos padrão por permissão de setor
-    const permitidos = modulosDisponiveis.filter((modulo) => 
+    const permitidos = modulosDisponiveis.filter((modulo) =>
       hasPermission(usuario, modulo.nome)
     );
 

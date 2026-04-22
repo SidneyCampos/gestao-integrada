@@ -11,10 +11,14 @@ const router = express.Router();
 const FerramentaController = require('./FerramentaController');
 const EmprestimoController = require('./EmprestimoController');
 const FuncionarioController = require('./FuncionarioController');
+const sectorMiddleware = require('../../core/sectorMiddleware');
 
 // --- Rotas de Ferramentas ---
 router.get('/ferramentas', FerramentaController.listar);
 router.post('/ferramentas', FerramentaController.criar);
+
+// ROTA DE AJUSTE RÁPIDO (Protegida para TI ou Admin)
+router.patch('/ferramentas/:id/ajustar-estoque', sectorMiddleware('TI'), FerramentaController.ajustarEstoque);
 
 // --- Rotas de Empréstimos ---
 

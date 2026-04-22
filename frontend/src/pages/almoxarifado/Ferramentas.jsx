@@ -346,115 +346,117 @@ export default function Ferramentas() {
           <div className="w-full">
             {/* ================= CONTEÚDO DA ABA: ESTOQUE ================= */}
             {abaAtiva === "estoque" && (
-              <table className="w-full text-left border-collapse block lg:table">
-                <thead className="hidden lg:table-header-group">
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold block lg:table-row">
-                    <th className="px-4 py-3 block lg:table-cell">
-                      Patrimônio
-                    </th>
-                    <th className="px-4 py-3 block lg:table-cell">Descrição</th>
-                    <th className="px-4 py-3 text-center block lg:table-cell">
-                      Total
-                    </th>
-                    <th className="px-4 py-3 text-center block lg:table-cell">
-                      Disponível
-                    </th>
-                    <th className="px-4 py-3 block lg:table-cell">Status</th>
-                    <th className="px-4 py-3 text-right block lg:table-cell">
-                      Opções
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="grid grid-cols-1 md:grid-cols-2 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
-                  {ferramentasFiltradas.length === 0 && (
-                    <tr className="lg:table-row">
-                       <td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic">
-                         Nenhuma ferramenta encontrada.
-                       </td>
+              <>
+                <table className="w-full text-left border-collapse block lg:table">
+                  <thead className="hidden lg:table-header-group">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold block lg:table-row">
+                      <th className="px-4 py-3 block lg:table-cell">
+                        Patrimônio
+                      </th>
+                      <th className="px-4 py-3 block lg:table-cell">Descrição</th>
+                      <th className="px-4 py-3 text-center block lg:table-cell">
+                        Total
+                      </th>
+                      <th className="px-4 py-3 text-center block lg:table-cell">
+                        Disponível
+                      </th>
+                      <th className="px-4 py-3 block lg:table-cell">Status</th>
+                      <th className="px-4 py-3 text-right block lg:table-cell">
+                        Opções
+                      </th>
                     </tr>
-                  )}
-                  {ferramentasFiltradas.map((ferramenta) => (
-                    <tr
-                      key={ferramenta.id}
-                      className="block lg:table-row bg-white border border-slate-200 lg:border-none rounded-xl lg:rounded-none shadow-sm lg:shadow-none hover:bg-slate-50 relative"
-                    >
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Patrimônio
-                        </span>
-                        <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                          {ferramenta.codigoPatrimonio || "S/N"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell font-bold text-slate-900 border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Descrição
-                        </span>
-                        {ferramenta.nome}
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Total
-                        </span>
-                        {ferramenta.quantidadeTotal}
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center font-bold border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Disponível
-                        </span>
-                        <span
-                          className={`text-lg lg:text-sm ${ferramenta.qtdDisponivel > 0 ? "text-emerald-600" : "text-red-500"}`}
-                        >
-                          {ferramenta.qtdDisponivel}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Status
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${ferramenta.qtdDisponivel > 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
-                        >
-                          {ferramenta.qtdDisponivel > 0
-                            ? "Em Estoque"
-                            : "Esgotado"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-end lg:table-cell text-right relative">
-                        <button
-                          onClick={() =>
-                            setMenuAbertoId(
-                              menuAbertoId === ferramenta.id
-                                ? null
-                                : ferramenta.id,
-                            )
-                          }
-                          className="flex items-center gap-2 p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg w-full lg:w-auto justify-center transition-colors"
-                        >
-                          <MoreVertical className="w-5 h-5 hidden lg:block" />
-                          <span className="lg:hidden font-semibold text-sm">
-                            Gerenciar
+                  </thead>
+                  <tbody className="grid grid-cols-1 md:grid-cols-2 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
+                    {ferramentasFiltradas.length === 0 && (
+                      <tr className="lg:table-row">
+                         <td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic">
+                           Nenhuma ferramenta encontrada.
+                         </td>
+                      </tr>
+                    )}
+                    {ferramentasFiltradas.map((ferramenta) => (
+                      <tr
+                        key={ferramenta.id}
+                        className="block lg:table-row bg-white border border-slate-200 lg:border-none rounded-xl lg:rounded-none shadow-sm lg:shadow-none hover:bg-slate-50 relative"
+                      >
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Patrimônio
                           </span>
-                        </button>
-                        {menuAbertoId === ferramenta.id && (
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 flex flex-col overflow-hidden text-left animate-in fade-in zoom-in-95">
-                            <button
-                              disabled={ferramenta.qtdDisponivel <= 0}
-                              onClick={() => {
-                                setFerramentaSelecionada(ferramenta);
-                                setModalEmprestimoAberto(true);
-                                setMenuAbertoId(null);
-                              }}
-                              className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-blue-50 text-blue-700 font-semibold border-b border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <ArrowRightLeft className="w-4 h-4" /> Emprestar
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                          <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                            {ferramenta.codigoPatrimonio || "S/N"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell font-bold text-slate-900 border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Descrição
+                          </span>
+                          {ferramenta.nome}
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Total
+                          </span>
+                          {ferramenta.quantidadeTotal}
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center font-bold border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Disponível
+                          </span>
+                          <span
+                            className={`text-lg lg:text-sm ${ferramenta.qtdDisponivel > 0 ? "text-emerald-600" : "text-red-500"}`}
+                          >
+                            {ferramenta.qtdDisponivel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Status
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${ferramenta.qtdDisponivel > 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+                          >
+                            {ferramenta.qtdDisponivel > 0
+                              ? "Em Estoque"
+                              : "Esgotado"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-end lg:table-cell text-right relative">
+                          <button
+                            onClick={() =>
+                              setMenuAbertoId(
+                                menuAbertoId === ferramenta.id
+                                  ? null
+                                  : ferramenta.id,
+                              )
+                            }
+                            className="flex items-center gap-2 p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg w-full lg:w-auto justify-center transition-colors"
+                          >
+                            <MoreVertical className="w-5 h-5 hidden lg:block" />
+                            <span className="lg:hidden font-semibold text-sm">
+                              Gerenciar
+                            </span>
+                          </button>
+                          {menuAbertoId === ferramenta.id && (
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 flex flex-col overflow-hidden text-left animate-in fade-in zoom-in-95">
+                              <button
+                                disabled={ferramenta.qtdDisponivel <= 0}
+                                onClick={() => {
+                                  setFerramentaSelecionada(ferramenta);
+                                  setModalEmprestimoAberto(true);
+                                  setMenuAbertoId(null);
+                                }}
+                                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-blue-50 text-blue-700 font-semibold border-b border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <ArrowRightLeft className="w-4 h-4" /> Emprestar
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 {/* ESTE CÓDIGO INVISÍVEL FECHA O MENU SE CLICAR FORA DELE */}
                 {menuAbertoId && (
                   <div
@@ -462,7 +464,7 @@ export default function Ferramentas() {
                     onClick={() => setMenuAbertoId(null)}
                   ></div>
                 )}
-              </table>
+              </>
             )}
 
             {/* ================= CONTEÚDO DA ABA: EMPRÉSTIMOS E HISTÓRICO ================= */}
