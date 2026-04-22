@@ -1,3 +1,10 @@
+/**
+ * @file AlmoxarifadoDashboard.jsx
+ * @description Dashboard principal do módulo de Almoxarifado.
+ * Atua como um menu centralizador para todas as ferramentas pertencentes a este setor.
+ * @module Frontend/Pages/Almoxarifado/Dashboard
+ */
+
 import { Link } from "react-router-dom";
 import { Wrench, Shield, Droplets } from "lucide-react";
 

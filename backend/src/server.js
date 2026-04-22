@@ -1,18 +1,25 @@
+/**
+ * @file server.js
+ * @description Ponto de entrada (Entrypoint) principal do backend.
+ * Configura o servidor Express, middlewares globais, rotas da API e o fornecimento de arquivos estáticos (Frontend).
+ * @module Server
+ */
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path'); // Ferramenta nativa do Node para ler pastas
 
 const rotasAlmoxarifado = require('./modulos/almoxarifado/rotas');
 const rotasCore = require('./core/rotas');
+const authMiddleware = require('./core/authMiddleware');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==========================================
 // 1. ROTAS DE API (O Cérebro do Banco)
 // ==========================================
-app.use('/api/almoxarifado', rotasAlmoxarifado);
+app.use('/api/almoxarifado', authMiddleware, rotasAlmoxarifado);
 app.use('/api/core', rotasCore);
 
 // ==========================================

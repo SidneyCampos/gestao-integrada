@@ -1,22 +1,46 @@
+/**
+ * @file App.jsx
+ * @description Orquestrador principal da interface de usuário.
+ * Gerencia o roteamento (React Router), controle de sessão persistente no localStorage,
+ * e protege rotas baseadas nos setores (permissões) do usuário logado.
+ * @module Frontend/App
+ */
+
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import AlmoxarifadoDashboard from "./pages/almoxarifado/AlmoxarifadoDashboard";
 import Ferramentas from "./pages/almoxarifado/Ferramentas";
 import Login from "./pages/Login";
+import Usuarios from "./pages/Usuarios";
+import Informatica from "./pages/ti/Informatica";
+import { hasPermission } from "./utils/auth";
+import axios from "axios";
 
+/**
+ * Wrapper de Rota Protegida.
+ * Verifica se o usuário logado tem permissão (setor) para acessar a página filha.
+ * Se for admin, o acesso é liberado automaticamente. Caso não tenha acesso, redireciona para a home.
+ * @param {Object} props - { usuario, setorExigido, children }
+ */
 function RotaProtegida({ usuario, setorExigido, children }) {
-  if (usuario?.isAdmin) return children;
-  const temPermissao = usuario?.setores?.some(
-    (setor) => setor.nome === setorExigido,
-  );
-  if (!temPermissao) return <Navigate to="/" replace />;
+  // Utiliza a validação centralizada e segura
+  const acessoLiberado = hasPermission(usuario, setorExigido);
+  
+  if (!acessoLiberado) {
+    return <Navigate to="/" replace />;
+  }
+  
   return children;
 }
 
 // ========================================================
 // TELA INICIAL (DASHBOARD GERAL)
 // ========================================================
+/**
+ * Componente da Tela Inicial exibida após o login.
+ * Mostra uma saudação personalizada e curiosidades randômicas da cidade para engajar o servidor.
+ */
 function TelaInicial({ usuario }) {
   // Lista de curiosidades para engajar o servidor
   const curiosidades = [
@@ -72,7 +96,6 @@ function TelaInicial({ usuario }) {
   );
 }
 
-// ... (mantenha os imports e a função TelaInicial e RotaProtegida iguais)
 
 // ========================================================
 // APLICATIVO PRINCIPAL E GERENCIADOR DE ESTADO
@@ -120,15 +143,50 @@ export default function App() {
   }, []); // O array vazio garante que isso rode apenas 1 vez quando o App abrir
 
   // ================= FUNÇÕES DE LOGIN/LOGOUT =================
-  const handleLoginSuccess = (dadosUsuario) => {
-    setUsuarioLogado(dadosUsuario);
-    localStorage.setItem("usuarioPrefHub", JSON.stringify(dadosUsuario));
+  const handleLoginSuccess = (dadosSessao) => {
+    // Agora recebemos { usuario, token } do backend
+    const { usuario, token } = dadosSessao;
+    setUsuarioLogado(usuario);
+    
+    // Salva tudo no crachá digital (localStorage)
+    localStorage.setItem("usuarioPrefHub", JSON.stringify(usuario));
+    localStorage.setItem("tokenPrefHub", token);
+
+    // Configura o axios para as próximas chamadas
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   };
 
   const handleLogout = () => {
     setUsuarioLogado(null);
     localStorage.removeItem("usuarioPrefHub");
+    localStorage.removeItem("tokenPrefHub");
+    delete axios.defaults.headers.common['Authorization'];
   };
+
+  // Configuração inicial do Axios caso já exista token salvo
+  useEffect(() => {
+    const token = localStorage.getItem("tokenPrefHub");
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+
+    // INTERCEPTOR PARA TOKEN EXPIRADO
+    // Se o backend retornar 401 ou 403 em qualquer chamada, deslogamos o usuário
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          // Se for uma tentativa de login errada, não desloga (quem trata é a tela de login)
+          if (!error.config.url.includes("/api/core/login")) {
+            handleLogout();
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
 
   // ================= RENDERIZAÇÃO DAS TELAS =================
   if (!usuarioLogado) {
@@ -164,6 +222,30 @@ export default function App() {
                 setorExigido="Almoxarifado"
               >
                 <Ferramentas />
+              </RotaProtegida>
+            }
+          />
+
+          <Route
+            path="ti/informatica"
+            element={
+              <RotaProtegida
+                usuario={usuarioLogado}
+                setorExigido="TI"
+              >
+                <Informatica />
+              </RotaProtegida>
+            }
+          />
+
+          <Route
+            path="usuarios"
+            element={
+              <RotaProtegida
+                usuario={usuarioLogado}
+                setorExigido="ADMIN_ONLY" // Truque: isAdmin cuida disso
+              >
+                <Usuarios />
               </RotaProtegida>
             }
           />

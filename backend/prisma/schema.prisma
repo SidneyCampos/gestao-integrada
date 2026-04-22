@@ -17,6 +17,9 @@ model Setor {
   nome     String    @unique
   // Relação N:N (Muitos para Muitos) - O Prisma resolve a tabela intermediária sozinho!
   usuarios Usuario[]
+
+  // Novos campos para vincular itens/ferramentas a setores específicos
+  ferramentas Ferramenta[]
 }
 
 model Usuario {
@@ -31,8 +34,9 @@ model Usuario {
   login String? @unique
   senha String? // Para simplificar agora, sem hash complexo.
 
-  // Permissões
-  isAdmin Boolean @default(false)
+  // Permissões e Tipo
+  isAdmin   Boolean @default(false)
+  isSistema Boolean @default(true) // Se for false, é um funcionário que só recebe coisas, não acessa o sistema.
 
   // O que esse usuário fez?
   emprestimos Emprestimo[]
@@ -48,6 +52,14 @@ model Ferramenta {
   codigoPatrimonio String? @unique // Caso a ferramenta tenha um código na plaquinha
   quantidadeTotal  Int
   qtdDisponivel    Int
+
+  // Novas propriedades para melhor organização e segurança
+  categoria String? // Ex: 'Consumível', 'Ferramenta', 'Informática'
+  
+  // Vínculo com Setor: Se for nulo, é do Almoxarifado Geral. 
+  // Se tiver um ID, apenas usuários desse setor (ou Admins) podem gerenciar.
+  setorId Int?
+  setor   Setor? @relation(fields: [setorId], references: [id])
 
   emprestimos Emprestimo[]
 }

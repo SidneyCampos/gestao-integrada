@@ -1,3 +1,11 @@
+/**
+ * @file Login.jsx
+ * @description Tela de autenticação do sistema.
+ * Coleta as credenciais do usuário e envia para a API. Em caso de sucesso,
+ * repassa os dados do usuário para o App.jsx armazenar a sessão.
+ * @module Frontend/Pages/Login
+ */
+
 import { useState } from "react";
 import { Lock, User, ArrowRight } from "lucide-react";
 import axios from "axios";
@@ -8,6 +16,10 @@ export default function Login({ onLogin }) {
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
 
+  /**
+   * Disparada ao submeter o formulário de login.
+   * Realiza a requisição POST para a API de autenticação.
+   */
   const handleEntrar = async (e) => {
     e.preventDefault();
     setErro("");
@@ -20,7 +32,7 @@ export default function Login({ onLogin }) {
         senha: senha,
       });
 
-      // Se o backend disser OK, passamos os dados do usuário para o App.jsx
+      // Se o backend disser OK, passamos o objeto completo { usuario, token } para o App.jsx
       onLogin(resposta.data);
     } catch (error) {
       // Se for erro 401 (senha incorreta), mostramos a mensagem que o backend mandou

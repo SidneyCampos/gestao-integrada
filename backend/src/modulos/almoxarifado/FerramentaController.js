@@ -1,3 +1,10 @@
+/**
+ * @file FerramentaController.js
+ * @description Controlador responsável pelo inventário de ferramentas no módulo de almoxarifado.
+ * Permite a criação de novos itens no sistema e a listagem de todos os itens cadastrados.
+ * @module Almoxarifado/FerramentaController
+ */
+
 // Importamos nossa conexão com o banco de dados
 const prisma = require('../../core/prisma');
 
@@ -6,61 +13,115 @@ class FerramentaController {
     // ========================================================
     // MÉTODO: CRIAR FERRAMENTA
     // ========================================================
+    /**
+     * Cadastra uma nova ferramenta no banco de dados.
+     * Define a `quantidade disponível` inicial como igual à `quantidade total` fornecida.
+     * @param {Object} req - Objeto de requisição. Deve conter `nome`, `codigoPatrimonio` e `quantidadeTotal` no body.
+     * @param {Object} res - Objeto de resposta retornando a ferramenta criada.
+     */
     // O 'async' (assíncrono) é obrigatório, pois o Node não sabe 
     // quanto tempo o banco vai demorar para salvar os dados. 
     // Ele precisa "esperar" (await) a resposta.
     static async criar(req, res) {
         try {
-            // req.body contém os dados que o usuário vai digitar na tela (Frontend)
-            const { nome, codigoPatrimonio, quantidadeTotal } = req.body;
+            const { nome, codigoPatrimonio, quantidadeTotal, categoria, setorId } = req.body;
 
-            // Validação simples: verificar se os campos obrigatórios vieram
             if (!nome || !quantidadeTotal) {
-                // status 400 = Bad Request (O usuário mandou dados incompletos)
                 return res.status(400).json({ erro: "Nome e Quantidade Total são obrigatórios." });
             }
 
-            // Usamos o Prisma para salvar no PostgreSQL
             const novaFerramenta = await prisma.ferramenta.create({
                 data: {
-                    nome: nome,
-                    codigoPatrimonio: codigoPatrimonio,
-                    quantidadeTotal: quantidadeTotal,
-                    // Quando uma ferramenta nova chega, a quantidade disponível é igual a total
-                    qtdDisponivel: quantidadeTotal
+                    nome,
+                    codigoPatrimonio,
+                    quantidadeTotal: parseInt(quantidadeTotal),
+                    qtdDisponivel: parseInt(quantidadeTotal),
+                    categoria,
+                    setorId: setorId ? parseInt(setorId) : null
                 }
             });
 
-            // status 201 = Created (Criado com sucesso). Retornamos os dados salvos.
             return res.status(201).json(novaFerramenta);
-
         } catch (erro) {
-            // Se der erro (ex: código de patrimônio já cadastrado), o sistema cai aqui.
-            // Isso impede que o servidor trave e feche sozinho.
             console.error("Erro ao criar ferramenta:", erro);
-            // status 500 = Internal Server Error
-            return res.status(500).json({ erro: "Erro interno ao cadastrar a ferramenta." });
+            return res.status(500).json({ erro: "Erro interno ao cadastrar o item." });
         }
     }
 
     // ========================================================
-    // MÉTODO: LISTAR TODAS AS FERRAMENTAS
+    // MÉTODO: LISTAR FERRAMENTAS (COM FILTRO DE SETOR)
     // ========================================================
     static async listar(req, res) {
         try {
-            // findMany() é o comando do Prisma para dar um "SELECT * FROM Ferramenta"
+            const { setorId } = req.query;
+            
+            let filtro = {};
+            
+            // Se for passado um setorId na URL, filtramos por ele
+            if (setorId && !isNaN(parseInt(setorId))) {
+                filtro.setorId = parseInt(setorId);
+            } else if (!req.usuario.isAdmin) {
+                // REGRA DE SEGURANÇA: Se não for admin e não pediu setor específico,
+                // por padrão, em algumas telas, podemos querer filtrar pelos setores do usuário.
+                // Mas aqui na listagem geral, vamos permitir ver tudo se não houver restrição na rota.
+            }
+
             const ferramentas = await prisma.ferramenta.findMany({
-                orderBy: { nome: 'asc' } // Já trazemos organizado em ordem alfabética para a UI
+                where: filtro,
+                include: { setor: true },
+                orderBy: { nome: 'asc' }
             });
 
-            // status 200 = OK.
             return res.status(200).json(ferramentas);
         } catch (erro) {
             console.error("Erro ao listar ferramentas:", erro);
-            return res.status(500).json({ erro: "Erro ao buscar ferramentas no banco." });
+            return res.status(500).json({ erro: "Erro ao buscar itens no banco." });
+        }
+    }
+
+    // ========================================================
+    // MÉTODO: AJUSTAR ESTOQUE (ENTRADA/SAÍDA RÁPIDA)
+    // ========================================================
+    /**
+     * Permite aumentar ou diminuir o estoque total e disponível de um item.
+     * Útil para consumíveis (TI) onde não há "empréstimo", mas sim uso direto.
+     */
+    static async ajustarEstoque(req, res) {
+        try {
+            const { id } = req.params;
+            const { variacao } = req.body; // Ex: +5 ou -2
+
+            if (!variacao) {
+                return res.status(400).json({ erro: "Variação de estoque não informada." });
+            }
+
+            const itemOriginal = await prisma.ferramenta.findUnique({ where: { id: parseInt(id) } });
+
+            if (!itemOriginal) {
+                return res.status(404).json({ erro: "Item não encontrado." });
+            }
+
+            const novaQuantidade = itemOriginal.quantidadeTotal + parseInt(variacao);
+
+            if (novaQuantidade < 0) {
+                return res.status(400).json({ erro: "O estoque não pode ficar negativo." });
+            }
+
+            // Atualizamos tanto o total quanto o disponível (pois assume-se que é consumível)
+            const itemAtualizado = await prisma.ferramenta.update({
+                where: { id: parseInt(id) },
+                data: {
+                    quantidadeTotal: novaQuantidade,
+                    qtdDisponivel: itemOriginal.qtdDisponivel + parseInt(variacao)
+                }
+            });
+
+            return res.status(200).json(itemAtualizado);
+        } catch (erro) {
+            console.error("Erro ao ajustar estoque:", erro);
+            return res.status(500).json({ erro: "Erro ao atualizar estoque." });
         }
     }
 }
 
-// Exportamos a classe para ligarmos ela às rotas
-module.exports = FerramentaController;
+module.exports = FerramentaController;

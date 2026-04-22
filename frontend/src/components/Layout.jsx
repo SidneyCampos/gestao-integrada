@@ -1,8 +1,18 @@
-import { useState } from "react";
+/**
+ * @file Layout.jsx
+ * @description Estrutura visual base (Shell) da aplicação.
+ * Contém o cabeçalho (Header), barra lateral de navegação (Sidebar Desktop) e barra inferior (Mobile).
+ * Também gerencia o Modal de Perfil de Usuário e alteração de senhas.
+ * @module Frontend/Components/Layout
+ */
+
+import { useState, useMemo } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 // O GRANDE CULPADO ESTAVA AQUI: Faltava o X na lista de ícones!
-import { Wrench, Users, Car, LogOut, MoreHorizontal, X } from "lucide-react";
+import { Wrench, Users, Car, LogOut, MoreHorizontal, X, Cpu } from "lucide-react";
 import axios from "axios";
+import { hasPermission } from "../utils/auth";
+import Modal from "./Modal";
 
 const modulosDisponiveis = [
   {
@@ -11,10 +21,21 @@ const modulosDisponiveis = [
     icone: Wrench,
     isPrimary: true,
   },
+  {
+    nome: "TI",
+    path: "/ti/informatica",
+    icone: Cpu,
+    isPrimary: true,
+  },
   { nome: "Recursos Humanos", path: "/rh", icone: Users, isPrimary: false },
   { nome: "Frota de Veículos", path: "/frota", icone: Car, isPrimary: false },
 ];
 
+/**
+ * Componente principal de Layout que engloba as telas filhas.
+ * Responsável por renderizar dinamicamente os menus baseados nas permissões (setores) do usuário.
+ * @param {Object} props - { usuario (dados do usuário logado), onLogout (função para encerrar sessão) }
+ */
 export default function Layout({ usuario, onLogout }) {
   const location = useLocation();
   const isActive = (path) => location.pathname.startsWith(path);
@@ -27,15 +48,35 @@ export default function Layout({ usuario, onLogout }) {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [statusSenha, setStatusSenha] = useState({ tipo: "", msg: "" });
 
-  const modulosPermitidos = modulosDisponiveis.filter((modulo) => {
-    if (usuario?.isAdmin) return true;
-    return usuario?.setores?.some((setor) => setor.nome === modulo.nome);
-  });
+  // Memoriza o cálculo da navegação para não reprocessar a cada letra digitada nos inputs/modais
+  const { modulosPermitidos, modulosPrimarios, modulosSecundarios } = useMemo(() => {
+    // 1. Filtra os módulos padrão por permissão de setor
+    const permitidos = modulosDisponiveis.filter((modulo) =>
+      hasPermission(usuario, modulo.nome)
+    );
 
-  const modulosPrimarios = modulosPermitidos.filter((m) => m.isPrimary);
-  const modulosSecundarios = modulosPermitidos.filter((m) => !m.isPrimary);
+    // 2. Se for Administrador, injeta o módulo de gestão de contas
+    if (usuario?.isAdmin) {
+      permitidos.push({
+        nome: "Usuários",
+        path: "/usuarios",
+        icone: Users,
+        isPrimary: false,
+      });
+    }
+
+    return {
+      modulosPermitidos: permitidos,
+      modulosPrimarios: permitidos.filter((m) => m.isPrimary),
+      modulosSecundarios: permitidos.filter((m) => !m.isPrimary),
+    };
+  }, [usuario]);
 
   // FUNÇÃO DE ALTERAR SENHA
+  /**
+   * Envia uma requisição PATCH para a API atualizar a senha do usuário logado.
+   * Valida se a nova senha coincide com a confirmação antes de enviar.
+   */
   const handleMudarSenha = async (e) => {
     e.preventDefault();
     if (novaSenha !== confirmarSenha) {
@@ -209,112 +250,96 @@ export default function Layout({ usuario, onLogout }) {
       </nav>
 
       {/* ================= MODAL MEU PERFIL ================= */}
-      {modalPerfilAberto && (
-        <div
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-          onClick={() => setModalPerfilAberto(false)}
-        >
-          <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h2 className="text-lg font-bold text-slate-800">Meu Perfil</h2>
-              <button
-                onClick={() => setModalPerfilAberto(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <Modal
+        isOpen={modalPerfilAberto}
+        onClose={() => setModalPerfilAberto(false)}
+        title="Meu Perfil"
+      >
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold shadow-md">
+              {usuario?.nome?.charAt(0).toUpperCase() || "S"}
             </div>
-
-            <div className="p-6 space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold shadow-md">
-                  {usuario?.nome?.charAt(0).toUpperCase() || "S"}
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-lg">
-                    {usuario?.nome}
-                  </h3>
-                  <p className="text-sm text-slate-500">
-                    Login: <span className="font-mono">{usuario?.login}</span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                <p className="text-xs font-bold text-slate-500 uppercase mb-2">
-                  Permissões de Acesso
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {usuario?.isAdmin ? (
-                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold">
-                      👑 Administrador Geral
-                    </span>
-                  ) : (
-                    usuario?.setores?.map((s) => (
-                      <span
-                        key={s.id}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold border border-blue-200"
-                      >
-                        {s.nome}
-                      </span>
-                    )) || (
-                      <span className="text-sm text-slate-500 italic">
-                        Nenhum setor atribuído
-                      </span>
-                    )
-                  )}
-                </div>
-              </div>
-
-              <form
-                onSubmit={handleMudarSenha}
-                className="border-t border-slate-200 pt-4 space-y-4"
-              >
-                <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                  Alterar Senha de Acesso
-                </p>
-                <div className="flex gap-4">
-                  <input
-                    type="password"
-                    required
-                    placeholder="Nova Senha"
-                    value={novaSenha}
-                    onChange={(e) => setNovaSenha(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <input
-                    type="password"
-                    required
-                    placeholder="Confirmar Senha"
-                    value={confirmarSenha}
-                    onChange={(e) => setConfirmarSenha(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                </div>
-                {statusSenha.msg && (
-                  <p
-                    className={`text-xs font-bold text-center ${statusSenha.tipo === "erro" ? "text-red-500" : statusSenha.tipo === "sucesso" ? "text-emerald-600" : "text-blue-500"}`}
-                  >
-                    {statusSenha.msg}
-                  </p>
-                )}
-                <button
-                  type="submit"
-                  disabled={statusSenha.tipo === "loading"}
-                  className="w-full py-2 bg-slate-800 text-white font-semibold rounded-lg text-sm hover:bg-slate-900 transition-colors disabled:opacity-50"
-                >
-                  {statusSenha.tipo === "loading"
-                    ? "Salvando..."
-                    : "Salvar Nova Senha"}
-                </button>
-              </form>
+            <div>
+              <h3 className="font-bold text-slate-800 text-lg">
+                {usuario?.nome}
+              </h3>
+              <p className="text-sm text-slate-500">
+                Login: <span className="font-mono">{usuario?.login}</span>
+              </p>
             </div>
           </div>
+
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <p className="text-xs font-bold text-slate-500 uppercase mb-2">
+              Permissões de Acesso
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {usuario?.isAdmin ? (
+                <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold">
+                  👑 Administrador Geral
+                </span>
+              ) : (
+                usuario?.setores?.map((s) => (
+                  <span
+                    key={s.id}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold border border-blue-200"
+                  >
+                    {s.nome}
+                  </span>
+                )) || (
+                  <span className="text-sm text-slate-500 italic">
+                    Nenhum setor atribuído
+                  </span>
+                )
+              )}
+            </div>
+          </div>
+
+          <form
+            onSubmit={handleMudarSenha}
+            className="border-t border-slate-200 pt-4 space-y-4"
+          >
+            <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+              Alterar Senha de Acesso
+            </p>
+            <div className="flex gap-4">
+              <input
+                type="password"
+                required
+                placeholder="Nova"
+                value={novaSenha}
+                onChange={(e) => setNovaSenha(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              <input
+                type="password"
+                required
+                placeholder="Confirmar"
+                value={confirmarSenha}
+                onChange={(e) => setConfirmarSenha(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+            </div>
+            {statusSenha.msg && (
+              <p
+                className={`text-xs font-bold text-center ${statusSenha.tipo === "erro" ? "text-red-500" : statusSenha.tipo === "sucesso" ? "text-emerald-600" : "text-blue-500"}`}
+              >
+                {statusSenha.msg}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={statusSenha.tipo === "loading"}
+              className="w-full py-2 bg-slate-800 text-white font-semibold rounded-lg text-sm hover:bg-slate-900 transition-colors disabled:opacity-50"
+            >
+              {statusSenha.tipo === "loading"
+                ? "Salvando..."
+                : "Salvar Nova Senha"}
+            </button>
+          </form>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

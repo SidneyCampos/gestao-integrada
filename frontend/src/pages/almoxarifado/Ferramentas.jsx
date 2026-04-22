@@ -1,4 +1,11 @@
-import { useState, useEffect } from "react";
+/**
+ * @file Ferramentas.jsx
+ * @description Interface completa para gestão de inventário e empréstimos de ferramentas.
+ * Possui abas de "Estoque" (com CRUD de ferramentas) e "Empréstimos" (histórico de saídas).
+ * @module Frontend/Pages/Almoxarifado/Ferramentas
+ */
+
+import { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Plus,
@@ -9,8 +16,10 @@ import {
   ArrowRightLeft,
   CheckCircle,
   Clock,
+  Trash2,
 } from "lucide-react";
 import axios from "axios";
+import Modal from "../../components/Modal";
 
 export default function Ferramentas() {
   // ================= ESTADOS DO SISTEMA =================
@@ -18,14 +27,17 @@ export default function Ferramentas() {
 
   const [ferramentas, setFerramentas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [funcionariosExternos, setFuncionariosExternos] = useState([]);
   const [emprestimos, setEmprestimos] = useState([]); // Guarda o histórico do banco
 
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [termoBusca, setTermoBusca] = useState("");
 
   const [menuAbertoId, setMenuAbertoId] = useState(null);
   const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
+  const [modalRapidoFuncionario, setModalRapidoFuncionario] = useState(false);
 
   const [ferramentaSelecionada, setFerramentaSelecionada] = useState(null);
   const [usuarioIdSelecionado, setUsuarioIdSelecionado] = useState("");
@@ -38,16 +50,23 @@ export default function Ferramentas() {
   });
 
   // ================= FUNÇÕES DE BUSCA (API) =================
+  /**
+   * Busca no banco de dados todas as ferramentas, usuários (para listar no select) e empréstimos.
+   * Executada sempre que a tela carrega e após cada operação de cadastro/empréstimo.
+   */
   const buscarDadosIniciais = async () => {
     try {
       setCarregando(true);
       // Busca ferramentas, usuários e empréstimos!
       const resFerramentas = await axios.get("/api/almoxarifado/ferramentas");
       const resUsuarios = await axios.get("/api/core/usuarios");
+      const resFuncionarios = await axios.get("/api/almoxarifado/funcionarios");
       const resEmprestimos = await axios.get("/api/almoxarifado/emprestimos");
 
       setFerramentas(resFerramentas.data);
-      setUsuarios(resUsuarios.data);
+      // Unifica os usuários do sistema com os funcionários externos para o Almoxarifado
+      setUsuarios([...resUsuarios.data, ...resFuncionarios.data]);
+      setFuncionariosExternos(resFuncionarios.data);
       setEmprestimos(resEmprestimos.data);
     } catch (erro) {
       console.error(erro);
@@ -62,6 +81,9 @@ export default function Ferramentas() {
   }, []);
 
   // ================= FUNÇÕES DE AÇÃO =================
+  /**
+   * Envia os dados do formulário do modal para a API criar uma nova ferramenta.
+   */
   const handleCriarFerramenta = async (e) => {
     e.preventDefault();
     try {
@@ -90,7 +112,7 @@ export default function Ferramentas() {
       await axios.post("/api/almoxarifado/emprestimos", {
         usuarioId: parseInt(usuarioIdSelecionado),
         ferramentaId: ferramentaSelecionada.id,
-        quantidade: parseInt(qtdEmprestimoSelecionada), // NOVA LINHA AQUI
+        quantidade: parseInt(qtdEmprestimoSelecionada),
       });
       setModalEmprestimoAberto(false);
       setUsuarioIdSelecionado("");
@@ -107,7 +129,50 @@ export default function Ferramentas() {
     }
   };
 
+  /**
+   * Cadastro rápido de funcionário externo (sem acesso ao sistema).
+   */
+  const handleCriarFuncionarioRapido = async (e) => {
+    e.preventDefault();
+    const nome = e.target.nome.value;
+    const telefone = e.target.telefone.value;
+
+    try {
+      setSalvando(true);
+      const res = await axios.post("/api/almoxarifado/funcionarios", { nome, telefone });
+      // Atualiza a lista local e já seleciona o novo funcionário
+      setUsuarios([...usuarios, res.data]);
+      setUsuarioIdSelecionado(res.data.id);
+      setModalRapidoFuncionario(false);
+    } catch (erro) {
+      alert("Erro ao cadastrar funcionário.");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  /**
+   * Remove um funcionário externo do banco.
+   */
+  const handleDeletarFuncionario = async (id) => {
+    if (!window.confirm("ATENÇÃO: Você tem certeza que deseja excluir este funcionário? Esta ação não pode ser desfeita.")) return;
+
+    try {
+      setCarregando(true);
+      await axios.delete(`/api/almoxarifado/funcionarios/${id}`);
+      buscarDadosIniciais();
+    } catch (erro) {
+      alert(erro.response?.data?.erro || "Erro ao excluir funcionário.");
+    } finally {
+      setCarregando(false);
+    }
+  };
+
   // NOVA FUNÇÃO: Devolver Ferramenta
+  /**
+   * Dispara a devolução de uma ferramenta pendente, restaurando o estoque.
+   * @param {number} emprestimoId - ID do empréstimo a ser finalizado.
+   */
   const handleDevolver = async (emprestimoId) => {
     if (!window.confirm("Confirmar a devolução desta ferramenta?")) return;
 
@@ -135,6 +200,28 @@ export default function Ferramentas() {
       data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     );
   };
+
+  // ================= LÓGICA DE BUSCA FILTRADA =================
+  const ferramentasFiltradas = useMemo(() => {
+    return ferramentas.filter(f => 
+      f.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      (f.codigoPatrimonio && f.codigoPatrimonio.toLowerCase().includes(termoBusca.toLowerCase()))
+    );
+  }, [ferramentas, termoBusca]);
+
+  const emprestimosFiltrados = useMemo(() => {
+    return emprestimos.filter(e => 
+      e.usuario?.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      e.ferramenta?.nome.toLowerCase().includes(termoBusca.toLowerCase())
+    );
+  }, [emprestimos, termoBusca]);
+
+  const equipeFiltrada = useMemo(() => {
+    return funcionariosExternos.filter(f => 
+      f.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      (f.telefone && f.telefone.includes(termoBusca))
+    );
+  }, [funcionariosExternos, termoBusca]);
 
   return (
     <div className="space-y-6 relative">
@@ -177,13 +264,19 @@ export default function Ferramentas() {
         >
           Acervo e Estoque
         </button>
-        <button
-          onClick={() => setAbaAtiva("emprestimos")}
-          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${abaAtiva === "emprestimos" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-        >
-          Empréstimos e Histórico
-        </button>
-      </div>
+          <button
+            onClick={() => setAbaAtiva("emprestimos")}
+            className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${abaAtiva === "emprestimos" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+          >
+            Histórico / Devolução
+          </button>
+          <button
+            onClick={() => setAbaAtiva("equipe")}
+            className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${abaAtiva === "equipe" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+          >
+            Equipe Externa
+          </button>
+        </div>
 
       {/* ================= ÁREA DE CONTEÚDO (TABELA OU CARTÕES) ================= */}
       <div className="bg-transparent lg:bg-white lg:border lg:border-slate-200 rounded-xl lg:shadow-sm overflow-visible pb-32 lg:pb-0">
@@ -192,11 +285,58 @@ export default function Ferramentas() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Pesquisar..."
-              className="w-full pl-9 pr-4 py-3 lg:py-2 text-sm border border-slate-300 rounded-lg lg:rounded-md outline-none bg-white"
+              placeholder={`Pesquisar em ${abaAtiva === 'estoque' ? 'Estoque' : abaAtiva === 'equipe' ? 'Equipe' : 'Histórico'}...`}
+              value={termoBusca}
+              onChange={(e) => setTermoBusca(e.target.value)}
+              className="w-full pl-9 pr-4 py-3 lg:py-2 text-sm border border-slate-300 rounded-lg lg:rounded-md outline-none bg-white focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
         </div>
+
+      {/* ================= ABA: EQUIPE EXTERNA ================= */}
+      {abaAtiva === "equipe" && (
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden animate-in fade-in duration-300">
+          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+            <h3 className="font-bold text-slate-800">Funcionários Cadastrados</h3>
+            <p className="text-xs text-slate-500">Pessoas que não acessam o sistema, mas retiram ferramentas.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">
+                  <th className="px-6 py-3">Nome</th>
+                  <th className="px-6 py-3">Telefone</th>
+                  <th className="px-6 py-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {equipeFiltrada.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="px-6 py-10 text-center text-slate-400 italic">
+                      {termoBusca ? "Nenhum funcionário encontrado com esse termo." : "Nenhum funcionário externo cadastrado."}
+                    </td>
+                  </tr>
+                ) : (
+                  equipeFiltrada.map(f => (
+                    <tr key={f.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-slate-700">{f.nome}</td>
+                      <td className="px-6 py-4 text-slate-500 text-sm">{f.telefone || "---"}</td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          onClick={() => handleDeletarFuncionario(f.id)}
+                          className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
         {carregando ? (
           <div className="p-8 text-center text-slate-500 animate-pulse">
@@ -206,108 +346,117 @@ export default function Ferramentas() {
           <div className="w-full">
             {/* ================= CONTEÚDO DA ABA: ESTOQUE ================= */}
             {abaAtiva === "estoque" && (
-              <table className="w-full text-left border-collapse block lg:table">
-                <thead className="hidden lg:table-header-group">
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold block lg:table-row">
-                    <th className="px-4 py-3 block lg:table-cell">
-                      Patrimônio
-                    </th>
-                    <th className="px-4 py-3 block lg:table-cell">Descrição</th>
-                    <th className="px-4 py-3 text-center block lg:table-cell">
-                      Total
-                    </th>
-                    <th className="px-4 py-3 text-center block lg:table-cell">
-                      Disponível
-                    </th>
-                    <th className="px-4 py-3 block lg:table-cell">Status</th>
-                    <th className="px-4 py-3 text-right block lg:table-cell">
-                      Opções
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="grid grid-cols-1 md:grid-cols-2 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
-                  {ferramentas.map((ferramenta) => (
-                    <tr
-                      key={ferramenta.id}
-                      className="block lg:table-row bg-white border border-slate-200 lg:border-none rounded-xl lg:rounded-none shadow-sm lg:shadow-none hover:bg-slate-50 relative"
-                    >
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Patrimônio
-                        </span>
-                        <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                          {ferramenta.codigoPatrimonio || "S/N"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell font-bold text-slate-900 border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Descrição
-                        </span>
-                        {ferramenta.nome}
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Total
-                        </span>
-                        {ferramenta.quantidadeTotal}
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center font-bold border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Disponível
-                        </span>
-                        <span
-                          className={`text-lg lg:text-sm ${ferramenta.qtdDisponivel > 0 ? "text-emerald-600" : "text-red-500"}`}
-                        >
-                          {ferramenta.qtdDisponivel}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
-                        <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
-                          Status
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${ferramenta.qtdDisponivel > 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
-                        >
-                          {ferramenta.qtdDisponivel > 0
-                            ? "Em Estoque"
-                            : "Esgotado"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 lg:py-2 flex justify-end lg:table-cell text-right relative">
-                        <button
-                          onClick={() =>
-                            setMenuAbertoId(
-                              menuAbertoId === ferramenta.id
-                                ? null
-                                : ferramenta.id,
-                            )
-                          }
-                          className="flex items-center gap-2 p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg w-full lg:w-auto justify-center transition-colors"
-                        >
-                          <MoreVertical className="w-5 h-5 hidden lg:block" />
-                          <span className="lg:hidden font-semibold text-sm">
-                            Gerenciar
-                          </span>
-                        </button>
-                        {menuAbertoId === ferramenta.id && (
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 flex flex-col overflow-hidden text-left animate-in fade-in zoom-in-95">
-                            <button
-                              disabled={ferramenta.qtdDisponivel <= 0}
-                              onClick={() => {
-                                setFerramentaSelecionada(ferramenta);
-                                setModalEmprestimoAberto(true);
-                                setMenuAbertoId(null);
-                              }}
-                              className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-blue-50 text-blue-700 font-semibold border-b border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <ArrowRightLeft className="w-4 h-4" /> Emprestar
-                            </button>
-                          </div>
-                        )}
-                      </td>
+              <>
+                <table className="w-full text-left border-collapse block lg:table">
+                  <thead className="hidden lg:table-header-group">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold block lg:table-row">
+                      <th className="px-4 py-3 block lg:table-cell">
+                        Patrimônio
+                      </th>
+                      <th className="px-4 py-3 block lg:table-cell">Descrição</th>
+                      <th className="px-4 py-3 text-center block lg:table-cell">
+                        Total
+                      </th>
+                      <th className="px-4 py-3 text-center block lg:table-cell">
+                        Disponível
+                      </th>
+                      <th className="px-4 py-3 block lg:table-cell">Status</th>
+                      <th className="px-4 py-3 text-right block lg:table-cell">
+                        Opções
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
+                  </thead>
+                  <tbody className="grid grid-cols-1 md:grid-cols-2 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
+                    {ferramentasFiltradas.length === 0 && (
+                      <tr className="lg:table-row">
+                         <td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic">
+                           Nenhuma ferramenta encontrada.
+                         </td>
+                      </tr>
+                    )}
+                    {ferramentasFiltradas.map((ferramenta) => (
+                      <tr
+                        key={ferramenta.id}
+                        className="block lg:table-row bg-white border border-slate-200 lg:border-none rounded-xl lg:rounded-none shadow-sm lg:shadow-none hover:bg-slate-50 relative"
+                      >
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Patrimônio
+                          </span>
+                          <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                            {ferramenta.codigoPatrimonio || "S/N"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell font-bold text-slate-900 border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Descrição
+                          </span>
+                          {ferramenta.nome}
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Total
+                          </span>
+                          {ferramenta.quantidadeTotal}
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center font-bold border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Disponível
+                          </span>
+                          <span
+                            className={`text-lg lg:text-sm ${ferramenta.qtdDisponivel > 0 ? "text-emerald-600" : "text-red-500"}`}
+                          >
+                            {ferramenta.qtdDisponivel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
+                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                            Status
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${ferramenta.qtdDisponivel > 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+                          >
+                            {ferramenta.qtdDisponivel > 0
+                              ? "Em Estoque"
+                              : "Esgotado"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 lg:py-2 flex justify-end lg:table-cell text-right relative">
+                          <button
+                            onClick={() =>
+                              setMenuAbertoId(
+                                menuAbertoId === ferramenta.id
+                                  ? null
+                                  : ferramenta.id,
+                              )
+                            }
+                            className="flex items-center gap-2 p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg w-full lg:w-auto justify-center transition-colors"
+                          >
+                            <MoreVertical className="w-5 h-5 hidden lg:block" />
+                            <span className="lg:hidden font-semibold text-sm">
+                              Gerenciar
+                            </span>
+                          </button>
+                          {menuAbertoId === ferramenta.id && (
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 flex flex-col overflow-hidden text-left animate-in fade-in zoom-in-95">
+                              <button
+                                disabled={ferramenta.qtdDisponivel <= 0}
+                                onClick={() => {
+                                  setFerramentaSelecionada(ferramenta);
+                                  setModalEmprestimoAberto(true);
+                                  setMenuAbertoId(null);
+                                }}
+                                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-blue-50 text-blue-700 font-semibold border-b border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <ArrowRightLeft className="w-4 h-4" /> Emprestar
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 {/* ESTE CÓDIGO INVISÍVEL FECHA O MENU SE CLICAR FORA DELE */}
                 {menuAbertoId && (
                   <div
@@ -315,7 +464,7 @@ export default function Ferramentas() {
                     onClick={() => setMenuAbertoId(null)}
                   ></div>
                 )}
-              </table>
+              </>
             )}
 
             {/* ================= CONTEÚDO DA ABA: EMPRÉSTIMOS E HISTÓRICO ================= */}
@@ -337,18 +486,18 @@ export default function Ferramentas() {
                   </tr>
                 </thead>
                 <tbody className="grid grid-cols-1 md:grid-cols-2 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
-                  {emprestimos.length === 0 && (
+                  {emprestimosFiltrados.length === 0 && (
                     <tr className="block lg:table-row">
                       <td
                         colSpan="5"
                         className="p-8 text-center text-slate-500 block lg:table-cell"
                       >
-                        Nenhum registro de empréstimo encontrado.
+                        {termoBusca ? "Nenhum resultado para esta busca." : "Nenhum registro de empréstimo encontrado."}
                       </td>
                     </tr>
                   )}
 
-                  {emprestimos.map((emp) => (
+                  {emprestimosFiltrados.map((emp) => (
                     <tr
                       key={emp.id}
                       className="block lg:table-row bg-white border border-slate-200 lg:border-none rounded-xl lg:rounded-none shadow-sm lg:shadow-none hover:bg-slate-50 relative"
@@ -414,201 +563,209 @@ export default function Ferramentas() {
       {/* (O Código dos Modais de Cadastro e Empréstimo continuam iguais aqui embaixo, omiti no resumo para focar na aba, MAS VOCÊ DEVE MANTER O CÓDIGO DELES IGUAL ESTAVA ANTES NO FINAL DO ARQUIVO) */}
 
       {/* ================= MODAL: CADASTRAR FERRAMENTA ================= */}
-      {/* O ERRO DO TAMANHO DAS CAIXAS FOI CORRIGIDO AQUI (w-full sm:flex-1) */}
-      {modalCadastroAberto && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h2 className="text-lg font-bold text-slate-800">
-                Cadastrar Ferramenta
-              </h2>
-              <button
-                onClick={() => setModalCadastroAberto(false)}
-                className="text-slate-400 hover:bg-slate-200 p-1 rounded-md"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleCriarFerramenta} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  Descrição / Nome *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Lixadeira Angular Dewalt"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none"
-                  onChange={(e) =>
-                    setNovaFerramenta({
-                      ...novaFerramenta,
-                      nome: e.target.value,
-                    })
-                  }
-                  value={novaFerramenta.nome}
-                />
-              </div>
-
-              {/* Correção do Alinhamento Mobile! */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="w-full sm:flex-1">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">
-                    Cód. Patrimônio
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: LX-001"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none uppercase"
-                    onChange={(e) =>
-                      setNovaFerramenta({
-                        ...novaFerramenta,
-                        codigoPatrimonio: e.target.value,
-                      })
-                    }
-                    value={novaFerramenta.codigoPatrimonio}
-                  />
-                </div>
-                <div className="w-full sm:w-32">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">
-                    Quantidade *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none"
-                    onChange={(e) =>
-                      setNovaFerramenta({
-                        ...novaFerramenta,
-                        quantidadeTotal: e.target.value,
-                      })
-                    }
-                    value={novaFerramenta.quantidadeTotal}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setModalCadastroAberto(false)}
-                  className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={salvando}
-                  className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
-                >
-                  Salvar Ferramenta
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={modalCadastroAberto}
+        onClose={() => setModalCadastroAberto(false)}
+        title="Cadastrar Ferramenta"
+      >
+        <form onSubmit={handleCriarFerramenta} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Descrição / Nome *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="Ex: Lixadeira Angular Dewalt"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none"
+              onChange={(e) =>
+                setNovaFerramenta({
+                  ...novaFerramenta,
+                  nome: e.target.value,
+                })
+              }
+              value={novaFerramenta.nome}
+            />
           </div>
-        </div>
-      )}
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="w-full sm:flex-1">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Cód. Patrimônio
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: LX-001"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none uppercase"
+                onChange={(e) =>
+                  setNovaFerramenta({
+                    ...novaFerramenta,
+                    codigoPatrimonio: e.target.value,
+                  })
+                }
+                value={novaFerramenta.codigoPatrimonio}
+              />
+            </div>
+            <div className="w-full sm:w-32">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Quantidade *
+              </label>
+              <input
+                type="number"
+                min="1"
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none"
+                onChange={(e) =>
+                  setNovaFerramenta({
+                    ...novaFerramenta,
+                    quantidadeTotal: e.target.value,
+                  })
+                }
+                value={novaFerramenta.quantidadeTotal}
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setModalCadastroAberto(false)}
+              className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando}
+              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+            >
+              Salvar Ferramenta
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* ================= MODAL: EMPRESTAR FERRAMENTA ================= */}
-      {modalEmprestimoAberto && ferramentaSelecionada && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-blue-600 text-white">
-              <h2 className="text-lg font-bold">Registrar Empréstimo</h2>
-              <button
-                onClick={() => setModalEmprestimoAberto(false)}
-                className="text-white/70 hover:text-white hover:bg-blue-700 p-1 rounded-md"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={modalEmprestimoAberto && !!ferramentaSelecionada}
+        onClose={() => setModalEmprestimoAberto(false)}
+        title="Registrar Empréstimo"
+        variant="blue"
+      >
+        <form onSubmit={handleEmprestar} className="space-y-5">
+          {/* Resumo da Ferramenta Escolhida */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-xs text-slate-500 font-semibold uppercase">
+              Ferramenta Solicitada
+            </p>
+            <p className="font-bold text-slate-800 text-lg">
+              {ferramentaSelecionada?.nome}
+            </p>
+            <p className="text-sm text-slate-600">
+              Patrimônio: {ferramentaSelecionada?.codigoPatrimonio || "S/N"}
+            </p>
+          </div>
 
-            <form onSubmit={handleEmprestar} className="p-6 space-y-5">
-              {/* Resumo da Ferramenta Escolhida */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <p className="text-xs text-slate-500 font-semibold uppercase">
-                  Ferramenta Solicitada
-                </p>
-                <p className="font-bold text-slate-800 text-lg">
-                  {ferramentaSelecionada.nome}
-                </p>
-                <p className="text-sm text-slate-600">
-                  Patrimônio: {ferramentaSelecionada.codigoPatrimonio || "S/N"}
-                </p>
-              </div>
-
-              {/* Seleção de Funcionário e Quantidade */}
-              {/* CORREÇÃO AQUI: flex-col para empilhar no celular pequeno, sm:flex-row no computador */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* w-full no celular, flex-1 no computador */}
-                <div className="w-full sm:flex-1">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">
-                    Para qual funcionário?
-                  </label>
-                  <select
-                    required
-                    value={usuarioIdSelecionado}
-                    onChange={(e) => setUsuarioIdSelecionado(e.target.value)}
-                    className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500 font-medium text-slate-700"
-                  >
-                    <option value="" disabled>
-                      Selecione da lista...
+          {/* Seleção de Funcionário e Quantidade */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="w-full sm:flex-1">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Para qual funcionário?
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  required
+                  value={usuarioIdSelecionado}
+                  onChange={(e) => setUsuarioIdSelecionado(e.target.value)}
+                  className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500 font-medium text-slate-700"
+                >
+                  <option value="" disabled>
+                    Selecione da lista...
+                  </option>
+                  {usuarios.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.nome} {u.isSistema ? "(Servidor)" : "(Externo)"}
                     </option>
-                    {usuarios.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.nome} (Setor:{" "}
-                        {u.setores && u.setores.length > 0
-                          ? u.setores.map((s) => s.nome).join(", ")
-                          : "Geral"}
-                        )
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* NOVO CAMPO: Quantidade de Saída (w-full no celular, w-24 no PC) */}
-                <div className="w-full sm:w-24">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">
-                    Qtd.
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max={ferramentaSelecionada.qtdDisponivel}
-                    required
-                    className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                    onChange={(e) =>
-                      setQtdEmprestimoSelecionada(e.target.value)
-                    }
-                    value={qtdEmprestimoSelecionada}
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3">
+                  ))}
+                </select>
                 <button
                   type="button"
-                  onClick={() => setModalEmprestimoAberto(false)}
-                  className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
+                  onClick={() => setModalRapidoFuncionario(true)}
+                  className="p-3 sm:p-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
+                  title="Novo Funcionário Externo"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={salvando}
-                  className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                >
-                  {salvando ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Confirmar Saída"
-                  )}
+                  <Plus className="w-5 h-5" />
                 </button>
               </div>
-            </form>
+            </div>
+
+            <div className="w-full sm:w-24">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Qtd.
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={ferramentaSelecionada?.qtdDisponivel}
+                required
+                className="w-full px-3 py-3 sm:py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) =>
+                  setQtdEmprestimoSelecionada(e.target.value)
+                }
+                value={qtdEmprestimoSelecionada}
+              />
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="pt-4 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setModalEmprestimoAberto(false)}
+              className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando}
+              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              {salvando ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                "Confirmar Saída"
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ================= MODAL: CADASTRO RÁPIDO DE FUNCIONÁRIO ================= */}
+      <Modal
+        isOpen={modalRapidoFuncionario}
+        onClose={() => setModalRapidoFuncionario(false)}
+        title="Cadastrar Funcionário Externo"
+      >
+        <form onSubmit={handleCriarFuncionarioRapido} className="space-y-4">
+          <p className="text-xs text-slate-500">
+            Este cadastro é apenas para controle de empréstimos. Este funcionário **não** terá acesso ao sistema.
+          </p>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Nome Completo</label>
+            <input name="nome" type="text" required className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Telefone / WhatsApp</label>
+            <input name="telefone" type="text" className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+          </div>
+          <div className="pt-2 flex justify-end gap-3">
+            <button type="button" onClick={() => setModalRapidoFuncionario(false)} className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg">Cancelar</button>
+            <button type="submit" disabled={salvando} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md">
+              {salvando ? "Salvando..." : "Confirmar Cadastro"}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

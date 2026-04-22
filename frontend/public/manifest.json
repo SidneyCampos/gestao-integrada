@@ -1,7 +1,8 @@
 {
+  "id": "/",
   "short_name": "Pref Hub",
-  "name": "Prefeitura Hub",
-  "description": "Sistema de Gestão",
+  "name": "Prefeitura Hub - Gestão Integrada",
+  "description": "Sistema de Gestão Integrada para Servidores",
   "icons": [
     {
       "src": "/logo-circular.png",

@@ -1,3 +1,11 @@
+/**
+ * @file EmprestimoController.js
+ * @description Controlador para a gestão de empréstimos de ferramentas.
+ * Trata lógicas complexas de transação envolvendo tanto a tabela de Empréstimos 
+ * quanto o controle de estoque na tabela de Ferramentas (dedução e incremento).
+ * @module Almoxarifado/EmprestimoController
+ */
+
 const prisma = require('../../core/prisma');
 
 class EmprestimoController {
@@ -5,6 +13,11 @@ class EmprestimoController {
     // ========================================================
     // MÉTODO: LISTAR EMPRÉSTIMOS (ATIVOS E HISTÓRICO)
     // ========================================================
+    /**
+     * Lista todos os empréstimos registrados (ativos e devolvidos).
+     * @param {Object} req - Objeto de requisição.
+     * @param {Object} res - Objeto de resposta. Retorna a lista com detalhes do funcionário e ferramenta.
+     */
     static async listar(req, res) {
         try {
             // Busca os empréstimos e já traz junto os dados de quem pegou e o que pegou!
@@ -25,6 +38,12 @@ class EmprestimoController {
     // ========================================================
     // MÉTODO: EMPRESTAR FERRAMENTA
     // ========================================================
+    /**
+     * Registra a saída de uma ou mais unidades de uma ferramenta para um funcionário.
+     * Realiza uma "Transação Segura" no banco: Cria o empréstimo E deduz o estoque ao mesmo tempo.
+     * @param {Object} req - Recebe `usuarioId`, `ferramentaId` e `quantidade` no body.
+     * @param {Object} res - Objeto de resposta confirmando o empréstimo.
+     */
     static async emprestar(req, res) {
         try {
             // Agora recebemos a quantidade também!
@@ -57,6 +76,7 @@ class EmprestimoController {
 
             return res.status(201).json(resultado[0]);
         } catch (erro) {
+            console.error("[ALMOX_EMPRESTAR_ERROR]", erro);
             return res.status(500).json({ erro: "Erro ao realizar empréstimo." });
         }
     }
@@ -64,6 +84,12 @@ class EmprestimoController {
     // ========================================================
     // MÉTODO: DEVOLVER FERRAMENTA
     // ========================================================
+    /**
+     * Finaliza o ciclo do empréstimo e retorna o item para o almoxarifado.
+     * Atualiza o status do empréstimo para "DEVOLVIDO" e reabastece a quantidade em estoque da ferramenta.
+     * @param {Object} req - Recebe o `id` do empréstimo na URL.
+     * @param {Object} res - Objeto de resposta confirmando a devolução.
+     */
     static async devolver(req, res) {
         try {
             const emprestimoId = parseInt(req.params.id);
@@ -87,6 +113,7 @@ class EmprestimoController {
 
             return res.status(200).json(resultado[0]);
         } catch (erro) {
+            console.error("[ALMOX_DEVOLVER_ERROR]", erro);
             return res.status(500).json({ erro: "Erro ao devolver." });
         }
     }
