@@ -2,25 +2,13 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Iniciando semeadura do banco de dados...');
+  console.log('Iniciando semeadura do banco de dados (PRODUÇÃO)...');
 
   // 1. Criar Setores
   const setorTI = await prisma.setor.upsert({
     where: { nome: 'TI' },
     update: {},
     create: { nome: 'TI' },
-  });
-
-  const setorManutencao = await prisma.setor.upsert({
-    where: { nome: 'Manutenção' },
-    update: {},
-    create: { nome: 'Manutenção' },
-  });
-
-  const setorAdm = await prisma.setor.upsert({
-    where: { nome: 'Administração' },
-    update: {},
-    create: { nome: 'Administração' },
   });
 
   const setorAlmoxarifado = await prisma.setor.upsert({
@@ -32,79 +20,134 @@ async function main() {
   console.log('Setores criados/verificados.');
 
   // 2. Criar Usuários
-  const joao = await prisma.usuario.create({
-    data: {
-      nome: 'João da Silva',
-      telefone: '11999999999',
-      login: 'joao.silva',
-      senha: '123',
+  
+  // Usuário Admin
+  await prisma.usuario.upsert({
+    where: { login: 'admin' },
+    update: { isSistema: true },
+    create: {
+      nome: 'Administrador Geral',
+      login: 'admin',
+      senha: 'admin',
+      isAdmin: true,
+      isSistema: true,
+    },
+  });
+
+  // Usuário TI
+  await prisma.usuario.upsert({
+    where: { login: 'ti' },
+    update: { isSistema: true },
+    create: {
+      nome: 'Equipe de TI',
+      login: 'ti',
+      senha: 'ti', 
       isAdmin: false,
       isSistema: true,
       setores: {
-        connect: [{ id: setorManutencao.id }, { id: setorAlmoxarifado.id }]
+        connect: [{ id: setorAlmoxarifado.id }, { id: setorTI.id }]
       }
     },
   });
 
-  const maria = await prisma.usuario.create({
-    data: {
-      nome: 'Maria Oliveira',
-      telefone: '11888888888',
-      login: 'maria.adm',
-      senha: '123',
-      isAdmin: true,
+  // Usuário Rafael Valle
+  await prisma.usuario.upsert({
+    where: { login: 'rafael.valle' },
+    update: { isSistema: true },
+    create: {
+      nome: 'Rafael Valle',
+      login: 'rafael.valle',
+      senha: 'mudar123',
+      isAdmin: false,
       isSistema: true,
       setores: {
-        connect: [{ id: setorAdm.id }, { id: setorTI.id }, { id: setorAlmoxarifado.id }]
+        connect: [{ id: setorAlmoxarifado.id }]
+      }
+    },
+  });
+
+  // Usuário Admilson Martins
+  await prisma.usuario.upsert({
+    where: { login: 'admilson.martins' },
+    update: { isSistema: true },
+    create: {
+      nome: 'Admilson Martins',
+      login: 'admilson.martins',
+      senha: 'mudar123',
+      isAdmin: false,
+      isSistema: true,
+      setores: {
+        connect: [{ id: setorAlmoxarifado.id }]
       }
     },
   });
 
   console.log('Usuários criados.');
 
-  // 3. Criar Ferramentas
-  const furadeira = await prisma.ferramenta.create({
-    data: {
-      nome: 'Furadeira Bosch 500W',
-      codigoPatrimonio: 'PAT-001',
-      quantidadeTotal: 5,
-      qtdDisponivel: 4,
-    },
-  });
+  // 3. Criar Equipamentos de TI (Almoxarifado TI)
+  const equipamentosTI = [
+    { nome: 'Toner TW2370/Pro Resolution', qtd: 20 },
+    { nome: 'Toner TN2370/Fast Print', qtd: 8 },
+    { nome: 'Tinta Azul EPSON 544', qtd: 3 },
+    { nome: 'Tinta Amarelo EPSON 544', qtd: 3 },
+    { nome: 'Tinta Magenta EPSON 544', qtd: 3 },
+    { nome: 'Toner 285/435/436', qtd: 6 },
+    { nome: 'Toner Hp258a', qtd: 4 },
+    { nome: 'Toner 435A/436A/285A/278', qtd: 10 },
+    { nome: 'Toner TN 3382', qtd: 8 },
+    { nome: 'Toner TN 1060 Brother', qtd: 14 },
+    { nome: 'Toner CE285A', qtd: 3 },
+    { nome: 'Toner TN 580', qtd: 8 },
+    { nome: 'Switch Painel 24 portas (seclan)', qtd: 1 },
+    { nome: 'Switch 24 portas PixeltI', qtd: 1 },
+    { nome: 'DVR Intelbras 8 portas', qtd: 1 },
+    { nome: 'Toner Brother TN3332', qtd: 1 },
+    { nome: 'Switch TP-Link 24 portas', qtd: 1 },
+    { nome: 'Toner P2500NW', qtd: 2 },
+    { nome: 'Mouse exbom novo', qtd: 2 },
+    { nome: 'Mouse exbom antigo', qtd: 1 },
+    { nome: 'Rot. wifi TP Link AC750', qtd: 2 },
+    { nome: 'Rot. wifi TP Link TL-WR840N', qtd: 1 },
+    { nome: 'Switch Knup 8 portas', qtd: 3 },
+    { nome: 'Rot. wifi Knup RW403/G', qtd: 2 },
+    { nome: 'Rot. wifi Tenda N300', qtd: 1 },
+    { nome: 'HD externo WD 1TB', qtd: 2 },
+    { nome: 'Teclado Genérico', qtd: 7 },
+    { nome: 'Filtro de linha Genérico', qtd: 5 },
+    { nome: 'Mousepad RA 203D', qtd: 7 },
+    { nome: 'Bateria CR2032', qtd: 7 },
+    { nome: 'Placa Mãe A320M', qtd: 1 },
+    { nome: 'Conversor Genérico VGA-HDMI', qtd: 1 },
+    { nome: 'Estabilizador Genérico', qtd: 2 },
+  ];
 
-  const multimetro = await prisma.ferramenta.create({
-    data: {
-      nome: 'Multímetro Digital Fluke',
-      codigoPatrimonio: 'PAT-002',
-      quantidadeTotal: 2,
-      qtdDisponivel: 2,
-    },
-  });
+  for (const item of equipamentosTI) {
+    const existe = await prisma.ferramenta.findFirst({
+      where: { nome: item.nome }
+    });
 
-  const jogoChaves = await prisma.ferramenta.create({
-    data: {
-      nome: 'Jogo de Chaves de Fenda',
-      codigoPatrimonio: 'PAT-003',
-      quantidadeTotal: 10,
-      qtdDisponivel: 10,
-    },
-  });
+    if (existe) {
+      await prisma.ferramenta.update({
+        where: { id: existe.id },
+        data: {
+          quantidadeTotal: item.qtd,
+          qtdDisponivel: item.qtd,
+        }
+      });
+    } else {
+      await prisma.ferramenta.create({
+        data: {
+          nome: item.nome,
+          quantidadeTotal: item.qtd,
+          qtdDisponivel: item.qtd,
+          categoria: 'Informática',
+          setorId: setorTI.id
+        }
+      });
+    }
+  }
 
-  console.log('Ferramentas criadas.');
-
-  // 4. Criar Empréstimos
-  await prisma.emprestimo.create({
-    data: {
-      usuarioId: joao.id,
-      ferramentaId: furadeira.id,
-      quantidade: 1,
-      status: 'PENDENTE',
-      dataSaida: new Date(),
-    },
-  });
-
-  console.log('Empréstimos criados.');
-
+  console.log('Equipamentos de TI cadastrados.');
   console.log('Semeadura concluída com sucesso!');
 }
 
