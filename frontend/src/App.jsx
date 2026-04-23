@@ -104,6 +104,14 @@ export default function App() {
   // ================= A MÁGICA DA MEMÓRIA =================
   const [usuarioLogado, setUsuarioLogado] = useState(() => {
     const crachaSalvo = localStorage.getItem("usuarioPrefHub");
+    const tokenSalvo = localStorage.getItem("tokenPrefHub");
+    
+    // Configura o Axios imediatamente se houver token salvo
+    // Isso evita o erro 401 ao atualizar a página (F5)
+    if (tokenSalvo) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${tokenSalvo}`;
+    }
+    
     return crachaSalvo ? JSON.parse(crachaSalvo) : null;
   });
 
@@ -163,12 +171,10 @@ export default function App() {
     delete axios.defaults.headers.common['Authorization'];
   };
 
-  // Configuração inicial do Axios caso já exista token salvo
   useEffect(() => {
-    const token = localStorage.getItem("tokenPrefHub");
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
+    // Interceptor para Token Expirado ou Inválido
+    // Se o backend retornar 401 ou 403 em qualquer chamada, deslogamos o usuário
+    // Nota: O token já é configurado na inicialização do state (acima)
 
     // INTERCEPTOR PARA TOKEN EXPIRADO
     // Se o backend retornar 401 ou 403 em qualquer chamada, deslogamos o usuário
