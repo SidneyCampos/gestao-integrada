@@ -23,7 +23,7 @@ const modulosDisponiveis = [
   },
   {
     nome: "TI",
-    path: "/ti/informatica",
+    path: "/ti",
     icone: Cpu,
     isPrimary: true,
   },
