@@ -24,26 +24,26 @@ async function main() {
   // Usuário Admin
   await prisma.usuario.upsert({
     where: { login: 'admin' },
-    update: {},
+    update: { isSistema: true },
     create: {
       nome: 'Administrador Geral',
       login: 'admin',
       senha: 'admin',
       isAdmin: true,
-      isSistema: false,
+      isSistema: true,
     },
   });
 
   // Usuário TI
   await prisma.usuario.upsert({
     where: { login: 'ti' },
-    update: {},
+    update: { isSistema: true },
     create: {
       nome: 'Equipe de TI',
       login: 'ti',
-      senha: 'ti', // Coloquei a senha como 'ti' para facilitar, mas pode trocar no painel depois.
+      senha: 'ti', 
       isAdmin: false,
-      isSistema: false,
+      isSistema: true,
       setores: {
         connect: [{ id: setorAlmoxarifado.id }, { id: setorTI.id }]
       }
@@ -53,13 +53,13 @@ async function main() {
   // Usuário Rafael Valle
   await prisma.usuario.upsert({
     where: { login: 'rafael.valle' },
-    update: {},
+    update: { isSistema: true },
     create: {
       nome: 'Rafael Valle',
       login: 'rafael.valle',
       senha: 'mudar123',
       isAdmin: false,
-      isSistema: false,
+      isSistema: true,
       setores: {
         connect: [{ id: setorAlmoxarifado.id }]
       }
@@ -69,13 +69,13 @@ async function main() {
   // Usuário Admilson Martins
   await prisma.usuario.upsert({
     where: { login: 'admilson.martins' },
-    update: {},
+    update: { isSistema: true },
     create: {
       nome: 'Admilson Martins',
       login: 'admilson.martins',
       senha: 'mudar123',
       isAdmin: false,
-      isSistema: false,
+      isSistema: true,
       setores: {
         connect: [{ id: setorAlmoxarifado.id }]
       }
@@ -83,6 +83,71 @@ async function main() {
   });
 
   console.log('Usuários criados.');
+
+  // 3. Criar Equipamentos de TI (Almoxarifado TI)
+  const equipamentosTI = [
+    { nome: 'Toner TW2370/Pro Resolution', qtd: 20 },
+    { nome: 'Toner TN2370/Fast Print', qtd: 8 },
+    { nome: 'Tinta Azul EPSON 544', qtd: 3 },
+    { nome: 'Tinta Amarelo EPSON 544', qtd: 3 },
+    { nome: 'Tinta Magenta EPSON 544', qtd: 3 },
+    { nome: 'Toner 285/435/436', qtd: 6 },
+    { nome: 'Toner Hp258a', qtd: 4 },
+    { nome: 'Toner 435A/436A/285A/278', qtd: 10 },
+    { nome: 'Toner TN 3382', qtd: 8 },
+    { nome: 'Toner TN 1060 Brother', qtd: 14 },
+    { nome: 'Toner CE285A', qtd: 3 },
+    { nome: 'Toner TN 580', qtd: 8 },
+    { nome: 'Switch Painel 24 portas (seclan)', qtd: 1 },
+    { nome: 'Switch 24 portas PixeltI', qtd: 1 },
+    { nome: 'DVR Intelbras 8 portas', qtd: 1 },
+    { nome: 'Toner Brother TN3332', qtd: 1 },
+    { nome: 'Switch TP-Link 24 portas', qtd: 1 },
+    { nome: 'Toner P2500NW', qtd: 2 },
+    { nome: 'Mouse exbom novo', qtd: 2 },
+    { nome: 'Mouse exbom antigo', qtd: 1 },
+    { nome: 'Rot. wifi TP Link AC750', qtd: 2 },
+    { nome: 'Rot. wifi TP Link TL-WR840N', qtd: 1 },
+    { nome: 'Switch Knup 8 portas', qtd: 3 },
+    { nome: 'Rot. wifi Knup RW403/G', qtd: 2 },
+    { nome: 'Rot. wifi Tenda N300', qtd: 1 },
+    { nome: 'HD externo WD 1TB', qtd: 2 },
+    { nome: 'Teclado Genérico', qtd: 7 },
+    { nome: 'Filtro de linha Genérico', qtd: 5 },
+    { nome: 'Mousepad RA 203D', qtd: 7 },
+    { nome: 'Bateria CR2032', qtd: 7 },
+    { nome: 'Placa Mãe A320M', qtd: 1 },
+    { nome: 'Conversor Genérico VGA-HDMI', qtd: 1 },
+    { nome: 'Estabilizador Genérico', qtd: 2 },
+  ];
+
+  for (const item of equipamentosTI) {
+    const existe = await prisma.ferramenta.findFirst({
+      where: { nome: item.nome }
+    });
+
+    if (existe) {
+      await prisma.ferramenta.update({
+        where: { id: existe.id },
+        data: {
+          quantidadeTotal: item.qtd,
+          qtdDisponivel: item.qtd,
+        }
+      });
+    } else {
+      await prisma.ferramenta.create({
+        data: {
+          nome: item.nome,
+          quantidadeTotal: item.qtd,
+          qtdDisponivel: item.qtd,
+          categoria: 'Informática',
+          setorId: setorTI.id
+        }
+      });
+    }
+  }
+
+  console.log('Equipamentos de TI cadastrados.');
   console.log('Semeadura concluída com sucesso!');
 }
 
