@@ -13,6 +13,11 @@ cd backend
 echo.
 echo Rodando sementes (Seeds)...
 call npx prisma db seed
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERRO] Falha ao popular o banco de dados.
+    pause
+    exit /b %ERRORLEVEL%
+)
 cd ..
 
 echo.
