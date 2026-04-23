@@ -170,6 +170,10 @@ export default function App() {
     localStorage.removeItem("usuarioPrefHub");
     localStorage.removeItem("tokenPrefHub");
     delete axios.defaults.headers.common['Authorization'];
+    
+    // REDIRECIONAMENTO DE SEGURANÇA:
+    // Força a URL a voltar para a raiz ao deslogar, limpando o rastro de navegação.
+    window.location.href = "/";
   };
 
   useEffect(() => {
