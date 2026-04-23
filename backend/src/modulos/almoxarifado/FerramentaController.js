@@ -53,17 +53,28 @@ class FerramentaController {
     // ========================================================
     static async listar(req, res) {
         try {
-            const { setorId } = req.query;
+            const { setorId, categoria, excluirCategoria } = req.query;
             
             let filtro = {};
             
-            // Se for passado um setorId na URL, filtramos por ele
-            if (setorId && !isNaN(parseInt(setorId))) {
+            // 1. Filtro por Setor
+            if (setorId === 'null') {
+                filtro.setorId = null;
+            } else if (setorId && !isNaN(parseInt(setorId))) {
                 filtro.setorId = parseInt(setorId);
-            } else if (!req.usuario.isAdmin) {
-                // REGRA DE SEGURANÇA: Se não for admin e não pediu setor específico,
-                // por padrão, em algumas telas, podemos querer filtrar pelos setores do usuário.
-                // Mas aqui na listagem geral, vamos permitir ver tudo se não houver restrição na rota.
+            }
+
+            // 2. Filtro por Categoria (Inclusão)
+            if (categoria) {
+                filtro.categoria = categoria;
+            }
+
+            // 3. Filtro por Categoria (Exclusão)
+            if (excluirCategoria) {
+                filtro.OR = [
+                    { categoria: { not: excluirCategoria } },
+                    { categoria: null }
+                ];
             }
 
             const ferramentas = await prisma.ferramenta.findMany({

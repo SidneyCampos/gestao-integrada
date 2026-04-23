@@ -58,7 +58,7 @@ export default function Ferramentas() {
     try {
       setCarregando(true);
       // Busca ferramentas, usuários e empréstimos!
-      const resFerramentas = await axios.get("/api/almoxarifado/ferramentas");
+      const resFerramentas = await axios.get("/api/almoxarifado/ferramentas?excluirCategoria=Informática");
       const resUsuarios = await axios.get("/api/core/usuarios");
       const resFuncionarios = await axios.get("/api/almoxarifado/funcionarios");
       const resEmprestimos = await axios.get("/api/almoxarifado/emprestimos");
@@ -92,6 +92,7 @@ export default function Ferramentas() {
         nome: novaFerramenta.nome,
         codigoPatrimonio: novaFerramenta.codigoPatrimonio,
         quantidadeTotal: parseInt(novaFerramenta.quantidadeTotal),
+        categoria: "Ferramenta",
       });
       setModalCadastroAberto(false);
       setNovaFerramenta({ nome: "", codigoPatrimonio: "", quantidadeTotal: 1 });
