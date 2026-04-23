@@ -33,7 +33,7 @@ class FerramentaController {
             const novaFerramenta = await prisma.ferramenta.create({
                 data: {
                     nome,
-                    codigoPatrimonio,
+                    codigoPatrimonio: (codigoPatrimonio && codigoPatrimonio.trim() !== "") ? codigoPatrimonio.trim() : null,
                     quantidadeTotal: parseInt(quantidadeTotal),
                     qtdDisponivel: parseInt(quantidadeTotal),
                     categoria,
