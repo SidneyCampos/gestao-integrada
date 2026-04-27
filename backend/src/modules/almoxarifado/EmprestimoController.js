@@ -23,10 +23,12 @@ class EmprestimoController {
             // Busca os empréstimos e já traz junto os dados de quem pegou e o que pegou!
             const emprestimos = await prisma.emprestimo.findMany({
                 include: {
-                    usuario: true,     // Traz os dados do funcionário
-                    ferramenta: true   // Traz os dados da ferramenta
+                    usuario: {
+                        include: { setores: true }
+                    },
+                    ferramenta: true
                 },
-                orderBy: { dataSaida: 'desc' } // Os mais recentes primeiro
+                orderBy: { dataSaida: 'desc' }
             });
             return res.status(200).json(emprestimos);
         } catch (erro) {

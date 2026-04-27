@@ -100,9 +100,9 @@ class FerramentaController {
     static async ajustarEstoque(req, res) {
         try {
             const { id } = req.params;
-            const { variacao } = req.body; // Ex: +5 ou -2
+            const { variacao, usuarioId } = req.body; // usuarioId é opcional para registro
 
-            if (!variacao) {
+            if (variacao === undefined) {
                 return res.status(400).json({ erro: "Variação de estoque não informada." });
             }
 
@@ -112,25 +112,42 @@ class FerramentaController {
                 return res.status(404).json({ erro: "Item não encontrado." });
             }
 
-            const novaQuantidade = itemOriginal.quantidadeTotal + parseInt(variacao);
+            const varInt = parseInt(variacao);
+            const novaQuantidadeTotal = itemOriginal.quantidadeTotal + varInt;
+            const novaQtdDisponivel = itemOriginal.qtdDisponivel + varInt;
 
-            if (novaQuantidade < 0) {
+            if (novaQuantidadeTotal < 0 || novaQtdDisponivel < 0) {
                 return res.status(400).json({ erro: "O estoque não pode ficar negativo." });
             }
 
-            // Atualizamos tanto o total quanto o disponível (pois assume-se que é consumível)
-            const itemAtualizado = await prisma.ferramenta.update({
-                where: { id: parseInt(id) },
-                data: {
-                    quantidadeTotal: novaQuantidade,
-                    qtdDisponivel: itemOriginal.qtdDisponivel + parseInt(variacao)
-                }
-            });
+            // Realizamos a operação em transação para garantir o histórico
+            const [itemAtualizado] = await prisma.$transaction([
+                // 1. Atualiza o item
+                prisma.ferramenta.update({
+                    where: { id: parseInt(id) },
+                    data: {
+                        quantidadeTotal: novaQuantidadeTotal,
+                        qtdDisponivel: novaQtdDisponivel
+                    }
+                }),
+                // 2. Se for uma saída (negativo) e tivermos um usuário, registra a baixa
+                ...(varInt < 0 && usuarioId ? [
+                    prisma.emprestimo.create({
+                        data: {
+                            ferramentaId: parseInt(id),
+                            usuarioId: parseInt(usuarioId),
+                            quantidade: Math.abs(varInt),
+                            status: "CONSUMIDO",
+                            dataDevolucao: new Date() // Como é consumível, já nasce "devolvido" (finalizado)
+                        }
+                    })
+                ] : [])
+            ]);
 
             return res.status(200).json(itemAtualizado);
         } catch (erro) {
-            console.error("Erro ao ajustar estoque:", erro);
-            return res.status(500).json({ erro: "Erro ao atualizar estoque." });
+            console.error("Erro ao ajustar estoque com histórico:", erro);
+            return res.status(500).json({ erro: "Erro ao processar ajuste de estoque." });
         }
     }
 }
