@@ -8,7 +8,7 @@
 
 import { useState } from "react";
 import { Lock, User, ArrowRight } from "lucide-react";
-import axios from "axios";
+import api from "../api/api";
 
 export default function Login({ onLogin }) {
   const [login, setLogin] = useState("");
@@ -27,7 +27,7 @@ export default function Login({ onLogin }) {
 
     try {
       // Bate no nosso backend oficial enviando o que o usuário digitou
-      const resposta = await axios.post("/api/core/login", {
+      const resposta = await api.post("/core/login", {
         login: login,
         senha: senha,
       });

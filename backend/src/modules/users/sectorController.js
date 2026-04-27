@@ -4,7 +4,7 @@
  * @module Core/SetorController
  */
 
-const prisma = require('./prisma');
+const prisma = require('../../shared/database/prisma');
 
 class SetorController {
     /**

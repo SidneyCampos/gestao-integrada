@@ -6,7 +6,7 @@
  * @module Almoxarifado/EmprestimoController
  */
 
-const prisma = require('../../core/prisma');
+const prisma = require('../../shared/database/prisma');
 
 class EmprestimoController {
 

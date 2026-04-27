@@ -5,7 +5,7 @@
  * @module Core/UsuarioController
  */
 
-const prisma = require('./prisma');
+const prisma = require('../../shared/database/prisma');
 
 class UsuarioController {
     /**

@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { Users, Plus, Trash2, Shield, ShieldAlert, RefreshCw } from "lucide-react";
-import axios from "axios";
+import api from "../api/api";
 import Modal from "../components/Modal";
 
 export default function Usuarios() {
@@ -29,8 +29,8 @@ export default function Usuarios() {
     try {
       setCarregando(true);
       const [resUsers, resSetores] = await Promise.all([
-        axios.get("/api/core/usuarios"),
-        axios.get("/api/core/setores")
+        api.get("/core/usuarios"),
+        api.get("/core/setores")
       ]);
       setUsuarios(resUsers.data);
       setSetores(resSetores.data);
@@ -49,7 +49,7 @@ export default function Usuarios() {
     e.preventDefault();
     try {
       setSalvando(true);
-      await axios.post("/api/core/usuarios", novoUsuario);
+      await api.post("/core/usuarios", novoUsuario);
       setModalAberto(false);
       setNovoUsuario({ nome: "", login: "", senha: "", isAdmin: false, setoresIds: [] });
       buscarDados();
@@ -63,7 +63,7 @@ export default function Usuarios() {
   const handleDeletar = async (id) => {
     if (!window.confirm("Tem certeza que deseja excluir este usuário?")) return;
     try {
-      await axios.delete(`/api/core/usuarios/${id}`);
+      await api.delete(`/core/usuarios/${id}`);
       buscarDados();
     } catch (erro) {
       alert(erro.response?.data?.erro || "Erro ao excluir.");

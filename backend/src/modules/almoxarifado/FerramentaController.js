@@ -6,7 +6,7 @@
  */
 
 // Importamos nossa conexão com o banco de dados
-const prisma = require('../../core/prisma');
+const prisma = require('../../shared/database/prisma');
 
 class FerramentaController {
 

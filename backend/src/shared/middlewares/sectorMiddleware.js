@@ -5,7 +5,7 @@
  * @module Core/SectorMiddleware
  */
 
-const prisma = require('./prisma');
+const prisma = require('../database/prisma');
 
 /**
  * Fabrica um middleware de verificação de setor.

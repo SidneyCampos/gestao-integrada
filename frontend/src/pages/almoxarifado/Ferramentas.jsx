@@ -18,7 +18,7 @@ import {
   Clock,
   Trash2,
 } from "lucide-react";
-import axios from "axios";
+import api from "../../api/api";
 import Modal from "../../components/Modal";
 
 export default function Ferramentas() {
@@ -58,10 +58,10 @@ export default function Ferramentas() {
     try {
       setCarregando(true);
       // Busca ferramentas, usuários e empréstimos!
-      const resFerramentas = await axios.get("/api/almoxarifado/ferramentas?excluirCategoria=Informática");
-      const resUsuarios = await axios.get("/api/core/usuarios");
-      const resFuncionarios = await axios.get("/api/almoxarifado/funcionarios");
-      const resEmprestimos = await axios.get("/api/almoxarifado/emprestimos");
+      const resFerramentas = await api.get("/almoxarifado/ferramentas?excluirCategoria=Informática");
+      const resUsuarios = await api.get("/core/usuarios");
+      const resFuncionarios = await api.get("/almoxarifado/funcionarios");
+      const resEmprestimos = await api.get("/almoxarifado/emprestimos");
 
       setFerramentas(resFerramentas.data);
       // Unifica os usuários do sistema com os funcionários externos para o Almoxarifado
@@ -88,7 +88,7 @@ export default function Ferramentas() {
     e.preventDefault();
     try {
       setSalvando(true);
-      await axios.post("/api/almoxarifado/ferramentas", {
+      await api.post("/almoxarifado/ferramentas", {
         nome: novaFerramenta.nome,
         codigoPatrimonio: novaFerramenta.codigoPatrimonio,
         quantidadeTotal: parseInt(novaFerramenta.quantidadeTotal),
@@ -110,7 +110,7 @@ export default function Ferramentas() {
 
     try {
       setSalvando(true);
-      await axios.post("/api/almoxarifado/emprestimos", {
+      await api.post("/almoxarifado/emprestimos", {
         usuarioId: parseInt(usuarioIdSelecionado),
         ferramentaId: ferramentaSelecionada.id,
         quantidade: parseInt(qtdEmprestimoSelecionada),
@@ -140,7 +140,7 @@ export default function Ferramentas() {
 
     try {
       setSalvando(true);
-      const res = await axios.post("/api/almoxarifado/funcionarios", { nome, telefone });
+      const res = await api.post("/almoxarifado/funcionarios", { nome, telefone });
       // Atualiza a lista local e já seleciona o novo funcionário
       setUsuarios([...usuarios, res.data]);
       setUsuarioIdSelecionado(res.data.id);
@@ -160,7 +160,7 @@ export default function Ferramentas() {
 
     try {
       setCarregando(true);
-      await axios.delete(`/api/almoxarifado/funcionarios/${id}`);
+      await api.delete(`/almoxarifado/funcionarios/${id}`);
       buscarDadosIniciais();
     } catch (erro) {
       alert(erro.response?.data?.erro || "Erro ao excluir funcionário.");
@@ -180,8 +180,8 @@ export default function Ferramentas() {
     try {
       setCarregando(true);
       // Chama nossa rota PATCH que criamos no backend
-      await axios.patch(
-        `/api/almoxarifado/emprestimos/${emprestimoId}/devolver`,
+      await api.patch(
+        `/almoxarifado/emprestimos/${emprestimoId}/devolver`,
       );
       buscarDadosIniciais(); // Atualiza tudo (o status vai para devolvido e a qtd aumenta)
     } catch (erro) {

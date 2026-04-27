@@ -11,7 +11,7 @@ const router = express.Router();
 const FerramentaController = require('./FerramentaController');
 const EmprestimoController = require('./EmprestimoController');
 const FuncionarioController = require('./FuncionarioController');
-const sectorMiddleware = require('../../core/sectorMiddleware');
+const sectorMiddleware = require('../../shared/middlewares/sectorMiddleware');
 
 // --- Rotas de Ferramentas ---
 router.get('/ferramentas', FerramentaController.listar);

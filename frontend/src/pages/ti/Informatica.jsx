@@ -17,7 +17,7 @@ import {
   Package,
   HardDrive
 } from "lucide-react";
-import axios from "axios";
+import api from "../../api/api";
 import Modal from "../../components/Modal";
 
 export default function Informatica() {
@@ -39,13 +39,13 @@ export default function Informatica() {
   const buscarDados = async () => {
     try {
       setCarregando(true);
-      const resSetores = await axios.get("/api/core/setores");
+      const resSetores = await api.get("/core/setores");
       setSetores(resSetores.data);
       
       const idTI = resSetores.data.find(s => s.nome === "TI")?.id;
       
       // Busca apenas itens vinculados ao setor TI
-      const resItens = await axios.get(`/api/almoxarifado/ferramentas?setorId=${idTI || ''}`);
+      const resItens = await api.get(`/almoxarifado/ferramentas?setorId=${idTI || ''}`);
       setItens(resItens.data);
     } catch (erro) {
       console.error(erro);
@@ -64,7 +64,7 @@ export default function Informatica() {
       setSalvando(true);
       const idTI = setores.find(s => s.nome === "TI")?.id;
       
-      await axios.post("/api/almoxarifado/ferramentas", {
+      await api.post("/almoxarifado/ferramentas", {
         ...novoItem,
         setorId: idTI
       });
@@ -81,7 +81,7 @@ export default function Informatica() {
 
   const handleAjustarEstoque = async (id, variacao) => {
     try {
-      await axios.patch(`/api/almoxarifado/ferramentas/${id}/ajustar-estoque`, { variacao });
+      await api.patch(`/almoxarifado/ferramentas/${id}/ajustar-estoque`, { variacao });
       // Atualiza localmente para ser instantâneo
       setItens(prev => prev.map(item => 
         item.id === id 
