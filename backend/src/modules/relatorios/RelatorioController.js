@@ -57,16 +57,39 @@ class RelatorioController {
     }
 
     /**
-     * Gera relatório de ferramentas e empréstimos ativos.
+     * Gera relatório de ferramentas e empréstimos ativos (Excluindo TI).
      */
     static async ferramentas(req, res) {
         try {
+            // Filtro para excluir itens do TI (setorId 1 ou categoria Informática)
+            // IMPORTANTE: Precisamos tratar valores null explicitamente no Prisma ao usar NOT
+            const whereFiltro = {
+                AND: [
+                    {
+                        OR: [
+                            { setorId: { not: 1 } },
+                            { setorId: null }
+                        ]
+                    },
+                    {
+                        OR: [
+                            { categoria: { not: 'Informática' } },
+                            { categoria: null }
+                        ]
+                    }
+                ]
+            };
+
             const inventario = await prisma.ferramenta.findMany({
+                where: whereFiltro,
                 orderBy: { nome: 'asc' }
             });
 
             const emprestimosAtivos = await prisma.emprestimo.findMany({
-                where: { status: 'PENDENTE' },
+                where: { 
+                    status: 'PENDENTE',
+                    ferramenta: whereFiltro
+                },
                 include: {
                     usuario: { select: { nome: true } },
                     ferramenta: { select: { nome: true } }
@@ -85,6 +108,50 @@ class RelatorioController {
         } catch (erro) {
             console.error("[RELATORIO_FERRAMENTAS_ERROR]", erro);
             return res.status(500).json({ erro: "Erro ao gerar relatório de ferramentas." });
+        }
+    }
+
+    /**
+     * Gera relatório exclusivo para o setor de TI.
+     */
+    static async ti(req, res) {
+        try {
+            // Filtro para incluir APENAS itens do TI
+            const whereFiltro = {
+                OR: [
+                    { setorId: 1 },
+                    { categoria: 'Informática' }
+                ]
+            };
+
+            const inventario = await prisma.ferramenta.findMany({
+                where: whereFiltro,
+                orderBy: { nome: 'asc' }
+            });
+
+            const emprestimosAtivos = await prisma.emprestimo.findMany({
+                where: { 
+                    status: 'PENDENTE',
+                    ferramenta: whereFiltro
+                },
+                include: {
+                    usuario: { select: { nome: true } },
+                    ferramenta: { select: { nome: true } }
+                }
+            });
+
+            return res.status(200).json({
+                resumo: {
+                    totalTipos: inventario.length,
+                    totalFerramentas: inventario.reduce((acc, f) => acc + f.quantidadeTotal, 0),
+                    totalEmprestadas: emprestimosAtivos.length
+                },
+                inventario,
+                emprestimosAtivos
+            });
+        } catch (erro) {
+            console.error("[RELATORIO_TI_ERROR]", erro);
+            return res.status(500).json({ erro: "Erro ao gerar relatório do TI." });
         }
     }
 }

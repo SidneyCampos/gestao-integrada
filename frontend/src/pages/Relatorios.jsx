@@ -16,15 +16,18 @@ import {
     ShoppingBag,
     Filter,
     History,
-    CheckCircle2
+    CheckCircle2,
+    Cpu
 } from 'lucide-react';
 import api from '../api/api';
+import { hasPermission } from '../utils/auth';
 
 export default function Relatorios({ usuarioLogado }) {
     const [abaAtiva, setAbaAtiva] = useState("consumo");
     const [carregando, setCarregando] = useState(false);
     const [dadosConsumo, setDadosConsumo] = useState(null);
     const [dadosFerramentas, setDadosFerramentas] = useState(null);
+    const [dadosTI, setDadosTI] = useState(null);
     const [setores, setSetores] = useState([]);
     const [filtros, setFiltros] = useState({
         dataInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
@@ -51,9 +54,12 @@ export default function Relatorios({ usuarioLogado }) {
                 const query = new URLSearchParams(filtros).toString();
                 const res = await api.get(`/relatorios/consumo?${query}`);
                 setDadosConsumo(res.data);
-            } else {
+            } else if (abaAtiva === "ferramentas") {
                 const res = await api.get('/relatorios/ferramentas');
                 setDadosFerramentas(res.data);
+            } else if (abaAtiva === "ti") {
+                const res = await api.get('/relatorios/ti');
+                setDadosTI(res.data);
             }
         } catch (erro) {
             console.error(erro);
@@ -81,7 +87,7 @@ export default function Relatorios({ usuarioLogado }) {
                 </div>
                 <div className="w-full bg-slate-900 text-white py-2 rounded-lg mt-2">
                     <h2 className="text-lg font-black uppercase tracking-widest">
-                        Relatório: {abaAtiva === 'consumo' ? 'Materiais de Consumo' : 'Gestão de Patrimônio e Ferramentas'}
+                        Relatório: {abaAtiva === 'consumo' ? 'Materiais de Consumo' : abaAtiva === 'ti' ? 'Inventário de TI' : 'Gestão de Patrimônio e Ferramentas'}
                     </h2>
                 </div>
                 <div className="mt-4 flex justify-between w-full text-[10px] font-bold text-slate-500 uppercase">
@@ -108,7 +114,7 @@ export default function Relatorios({ usuarioLogado }) {
 
             {/* SELEÇÃO E FILTROS (SOME NO PRINT) */}
             <div className="print:hidden">
-                <div className="flex bg-slate-200/50 p-1 rounded-xl w-full max-w-md mb-8">
+                <div className="flex flex-wrap md:flex-nowrap bg-slate-200/50 p-1 rounded-xl w-full max-w-3xl mb-8 gap-1">
                     <button onClick={() => setAbaAtiva("consumo")} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] sm:text-sm font-bold rounded-lg transition-all ${abaAtiva === "consumo" ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"}`}>
                         <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
                         <span className="hidden sm:inline">Materiais de </span>Consumo
@@ -117,6 +123,12 @@ export default function Relatorios({ usuarioLogado }) {
                         <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
                         <span className="hidden sm:inline">Ferramentas / </span>Patrimônio
                     </button>
+                    {hasPermission(usuarioLogado, "TI") && (
+                        <button onClick={() => setAbaAtiva("ti")} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] sm:text-sm font-bold rounded-lg transition-all ${abaAtiva === "ti" ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"}`}>
+                            <Cpu className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+                            TI
+                        </button>
+                    )}
                 </div>
 
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm mb-8">
@@ -160,6 +172,23 @@ export default function Relatorios({ usuarioLogado }) {
                         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Requisições</p>
                             <h2 className="text-3xl font-black text-slate-900 tracking-tighter">{dadosConsumo.resumo.quantidadeRequisicoes}</h2>
+                        </div>
+                    </div>
+                )}
+
+                {abaAtiva === "ti" && dadosTI && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-in fade-in slide-in-from-top-4">
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Itens de TI</p>
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tighter">{dadosTI.resumo.totalFerramentas}</h2>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Categorias</p>
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tighter">{dadosTI.resumo.totalTipos}</h2>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-4 border-l-blue-600">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Empréstimos Ativos</p>
+                            <h2 className="text-3xl font-black text-blue-600 tracking-tighter">{dadosTI.resumo.totalEmprestadas}</h2>
                         </div>
                     </div>
                 )}
@@ -246,6 +275,58 @@ export default function Relatorios({ usuarioLogado }) {
                                             <td className="px-6 py-3 border-r border-slate-200 font-bold">{emp.ferramenta.nome}</td>
                                             <td className="px-6 py-3 border-r border-slate-200 font-mono">{new Date(emp.dataSaida).toLocaleDateString()}</td>
                                             <td className="px-6 py-3 text-center uppercase font-black text-amber-600">Pendente</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ) : abaAtiva === "ti" && dadosTI ? (
+                    <div className="space-y-10">
+                        {/* Tabela de Inventário TI */}
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black uppercase border-l-4 border-blue-600 pl-3">Inventário Exclusivo - TI</h3>
+                            <table className="w-full text-left border-collapse border border-slate-300">
+                                <thead className="bg-slate-50 border-b-2 border-slate-300 text-[10px] font-black uppercase">
+                                    <tr>
+                                        <th className="px-6 py-4 border-r border-slate-300">Item / Hardware</th>
+                                        <th className="px-6 py-4 border-r border-slate-300">Patrimônio</th>
+                                        <th className="px-6 py-4 text-center border-r border-slate-300">Total</th>
+                                        <th className="px-6 py-4 text-center">Disponível</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dadosTI.inventario.map(inv => (
+                                        <tr key={inv.id} className="text-[11px] font-medium border-b border-slate-200">
+                                            <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{inv.nome}</td>
+                                            <td className="px-6 py-3 border-r border-slate-200 font-mono">{inv.codigoPatrimonio || "S/N"}</td>
+                                            <td className="px-6 py-3 text-center border-r border-slate-200 font-bold">{inv.quantidadeTotal}</td>
+                                            <td className="px-6 py-3 text-center font-black text-blue-600">{inv.qtdDisponivel}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Tabela de Empréstimos TI */}
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black uppercase border-l-4 border-slate-900 pl-3">Responsáveis por Equipamentos (TI)</h3>
+                            <table className="w-full text-left border-collapse border border-slate-300">
+                                <thead className="bg-slate-50 border-b-2 border-slate-300 text-[10px] font-black uppercase">
+                                    <tr>
+                                        <th className="px-6 py-4 border-r border-slate-300">Servidor</th>
+                                        <th className="px-6 py-4 border-r border-slate-300">Equipamento</th>
+                                        <th className="px-6 py-4 border-r border-slate-300">Data de Entrega</th>
+                                        <th className="px-6 py-4 text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dadosTI.emprestimosAtivos.map(emp => (
+                                        <tr key={emp.id} className="text-[11px] font-medium border-b border-slate-200">
+                                            <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{emp.usuario.nome}</td>
+                                            <td className="px-6 py-3 border-r border-slate-200 font-bold">{emp.ferramenta.nome}</td>
+                                            <td className="px-6 py-3 border-r border-slate-200 font-mono">{new Date(emp.dataSaida).toLocaleDateString()}</td>
+                                            <td className="px-6 py-3 text-center uppercase font-black text-blue-600">Em Uso</td>
                                         </tr>
                                     ))}
                                 </tbody>

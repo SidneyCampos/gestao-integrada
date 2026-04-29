@@ -53,6 +53,15 @@ export default function Ferramentas() {
     quantidadeTotal: 1,
   });
 
+  const [menuAbertoId, setMenuAbertoId] = useState(null);
+
+  // Fecha o menu de opções ao clicar fora dele
+  useEffect(() => {
+    const handleCliqueFora = () => setMenuAbertoId(null);
+    window.addEventListener("click", handleCliqueFora);
+    return () => window.removeEventListener("click", handleCliqueFora);
+  }, []);
+
   // ================= FUNÇÕES DE BUSCA (API) =================
   /**
    * Busca no banco de dados todas as ferramentas, usuários (para listar no select) e empréstimos.
@@ -494,13 +503,35 @@ export default function Ferramentas() {
                               Emprestar
                             </button>
                             
-                            <button
-                              onClick={() => handleDeletarFerramenta(ferramenta.id)}
-                              className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                              title="Excluir Ferramenta"
-                            >
-                              <Trash2 className="w-5 h-5 lg:w-4 lg:h-4" />
-                            </button>
+                            {/* MENU DE GERENCIAMENTO (3 PONTINHOS) */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Evita que o listener de clique fora feche o menu imediatamente
+                                  setMenuAbertoId(menuAbertoId === ferramenta.id ? null : ferramenta.id);
+                                }}
+                                className={`p-2 rounded-lg transition-all ${menuAbertoId === ferramenta.id ? "bg-blue-100 text-blue-600" : "text-slate-400 hover:text-blue-600 hover:bg-blue-50"}`}
+                                title="Gerenciar Ferramenta"
+                              >
+                                <MoreVertical className="w-5 h-5 lg:w-4 lg:h-4" />
+                              </button>
+
+                              {menuAbertoId === ferramenta.id && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                                  <div className="px-4 py-2 border-b border-slate-100 bg-slate-50">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Opções</p>
+                                  </div>
+                                  
+                                  <button
+                                    onClick={() => handleDeletarFerramenta(ferramenta.id)}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-bold"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Excluir Item
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
