@@ -19,10 +19,10 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 cd ..
-
+call pm2 start backend/src/server.js --name "Gestao-Integrada"
 echo.
 echo Reiniciando sistema...
-call pm2 start backend/src/server.js --name "Gestao-Integrada"
+
 echo.
 echo ===================================================
 echo   DADOS INSERIDOS COM SUCESSO!
