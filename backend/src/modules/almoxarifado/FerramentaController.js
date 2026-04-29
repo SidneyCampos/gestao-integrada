@@ -150,6 +150,40 @@ class FerramentaController {
             return res.status(500).json({ erro: "Erro ao processar ajuste de estoque." });
         }
     }
+
+    // ========================================================
+    // MÉTODO: EXCLUIR FERRAMENTA
+    // ========================================================
+    /**
+     * Remove uma ferramenta do banco de dados.
+     * Impede a exclusão se houver qualquer histórico de empréstimo (para manter integridade).
+     */
+    static async deletar(req, res) {
+        try {
+            const { id } = req.params;
+
+            // 1. Verificamos se há empréstimos vinculados
+            const countEmprestimos = await prisma.emprestimo.count({
+                where: { ferramentaId: parseInt(id) }
+            });
+
+            if (countEmprestimos > 0) {
+                return res.status(400).json({ 
+                    erro: "Não é possível excluir esta ferramenta pois ela possui histórico de empréstimos registrados." 
+                });
+            }
+
+            // 2. Se não houver, deletamos
+            await prisma.ferramenta.delete({
+                where: { id: parseInt(id) }
+            });
+
+            return res.status(200).json({ mensagem: "Ferramenta excluída com sucesso." });
+        } catch (erro) {
+            console.error("Erro ao excluir ferramenta:", erro);
+            return res.status(500).json({ erro: "Erro ao tentar excluir a ferramenta." });
+        }
+    }
 }
 
 module.exports = FerramentaController;

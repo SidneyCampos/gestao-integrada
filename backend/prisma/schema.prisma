@@ -39,7 +39,8 @@ model Usuario {
   isSistema Boolean @default(true) // Se for false, é um funcionário que só recebe coisas, não acessa o sistema.
 
   // O que esse usuário fez?
-  emprestimos Emprestimo[]
+  emprestimos        Emprestimo[]
+  requisicoesConsumo RequisicaoConsumo[]
 }
 
 // ==========================================
@@ -76,4 +77,32 @@ model Emprestimo {
   usuario      Usuario    @relation(fields: [usuarioId], references: [id])
   ferramentaId Int
   ferramenta   Ferramenta @relation(fields: [ferramentaId], references: [id])
+}
+
+// ==========================================
+// MÓDULO CONSUMO (LANÇAMENTO ÁGIL)
+// ==========================================
+
+model RequisicaoConsumo {
+  id                  Int      @id @default(autoincrement())
+  dataRegistro        DateTime @default(now())
+  departamentoDestino String
+  mesReferencia       String // ex: MARÇO/2026
+  valorTotal          Float    @default(0)
+
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  itens ItemRequisicaoConsumo[]
+}
+
+model ItemRequisicaoConsumo {
+  id           Int               @id @default(autoincrement())
+  requisicaoId Int
+  requisicao   RequisicaoConsumo @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+
+  descricaoProduto String // Texto livre para agilidade
+  quantidade       Float
+  valorUnitario    Float
+  subtotal         Float
 }

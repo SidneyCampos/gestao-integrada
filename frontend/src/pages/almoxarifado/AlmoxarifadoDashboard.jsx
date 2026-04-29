@@ -19,6 +19,14 @@ export default function AlmoxarifadoDashboard() {
       disponivel: true,
     },
     {
+      titulo: "Materiais de Consumo",
+      descricao: "Lançamento ágil de requisições por setor interno.",
+      icone: Droplets,
+      cor: "bg-cyan-600",
+      link: "/almoxarifado/consumo",
+      disponivel: true,
+    },
+    {
       titulo: "Controle de EPIs",
       descricao: "Distribuição e cautela de equipamentos de proteção.",
       icone: Shield,
@@ -26,20 +34,13 @@ export default function AlmoxarifadoDashboard() {
       link: "#",
       disponivel: false,
     },
-    {
-      titulo: "Materiais de Limpeza",
-      descricao: "Gestão de requisições de consumo por setor interno.",
-      icone: Droplets,
-      cor: "bg-cyan-600",
-      link: "#",
-      disponivel: false,
-    },
+
   ];
 
   return (
-    <ModuleDashboard 
-      setor="Almoxarifado Central" 
-      apps={miniApps} 
+    <ModuleDashboard
+      setor="Almoxarifado Central"
+      apps={miniApps}
     />
   );
 }

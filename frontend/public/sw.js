@@ -61,7 +61,16 @@ self.addEventListener('fetch', event => {
       })
       .catch(() => {
         // Se a rede falhar (offline), tenta buscar no cache
-        return caches.match(event.request);
+        return caches.match(event.request).then(response => {
+          if (response) return response;
+          
+          // Se for uma navegação de página (SPA), retorna o index.html do cache
+          if (event.request.mode === 'navigate') {
+            return caches.match('/');
+          }
+          
+          return null; // Vai falhar, mas de forma controlada pelo navegador
+        });
       })
   );
 });

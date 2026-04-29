@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import Usuarios from "./pages/Usuarios";
 import AlmoxarifadoDashboard from "./pages/almoxarifado/AlmoxarifadoDashboard";
 import Ferramentas from "./pages/almoxarifado/Ferramentas";
+import Consumo from "./pages/almoxarifado/Consumo";
 import TIDashboard from "./pages/ti/TIDashboard";
 import Informatica from "./pages/ti/Informatica";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -115,6 +116,15 @@ export default function App() {
             element={
               <ProtectedRoute usuario={usuarioLogado} setorExigido="Almoxarifado">
                 <Ferramentas />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="almoxarifado/consumo"
+            element={
+              <ProtectedRoute usuario={usuarioLogado} setorExigido="Almoxarifado">
+                <Consumo usuarioLogado={usuarioLogado} />
               </ProtectedRoute>
             }
           />
