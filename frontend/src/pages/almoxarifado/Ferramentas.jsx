@@ -20,6 +20,7 @@ import {
   Users,
   Package,
   History,
+  Edit3,
 } from "lucide-react";
 import api from "../../api/api";
 import Modal from "../../components/Modal";
@@ -42,6 +43,7 @@ export default function Ferramentas() {
   const [modalRapidoFuncionario, setModalRapidoFuncionario] = useState(false);
 
   const [ferramentaSelecionada, setFerramentaSelecionada] = useState(null);
+  const [funcionarioEditando, setFuncionarioEditando] = useState(null);
   const [usuarioIdSelecionado, setUsuarioIdSelecionado] = useState("");
   const [qtdEmprestimoSelecionada, setQtdEmprestimoSelecionada] = useState(1); // NOVA LINHA AQUI
 
@@ -142,13 +144,19 @@ export default function Ferramentas() {
 
     try {
       setSalvando(true);
-      const res = await api.post("/almoxarifado/funcionarios", { nome, telefone });
-      // Atualiza a lista local e já seleciona o novo funcionário
-      setUsuarios([...usuarios, res.data]);
-      setUsuarioIdSelecionado(res.data.id);
+      if (funcionarioEditando) {
+        await api.put(`/almoxarifado/funcionarios/${funcionarioEditando.id}`, { nome, telefone });
+      } else {
+        const res = await api.post("/almoxarifado/funcionarios", { nome, telefone });
+        setUsuarioIdSelecionado(res.data.id);
+      }
+      
       setModalRapidoFuncionario(false);
+      setFuncionarioEditando(null);
+      await buscarDadosIniciais(); // Atualiza tudo
+      setAbaAtiva("equipe"); // Manda para a aba da equipe externa
     } catch (erro) {
-      alert("Erro ao cadastrar funcionário.");
+      alert(erro.response?.data?.erro || "Erro ao processar funcionário.");
     } finally {
       setSalvando(false);
     }
@@ -363,7 +371,16 @@ export default function Ferramentas() {
                     <tr key={f.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 font-bold text-slate-700">{f.nome}</td>
                       <td className="px-6 py-4 text-slate-500 text-sm">{f.telefone || "---"}</td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right space-x-2">
+                        <button 
+                          onClick={() => {
+                            setFuncionarioEditando(f);
+                            setModalRapidoFuncionario(true);
+                          }}
+                          className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
                         <button 
                           onClick={() => handleDeletarFuncionario(f.id)}
                           className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
@@ -767,28 +784,53 @@ export default function Ferramentas() {
         </form>
       </Modal>
 
-      {/* ================= MODAL: CADASTRO RÁPIDO DE FUNCIONÁRIO ================= */}
+      {/* ================= MODAL: CADASTRO/EDIÇÃO DE FUNCIONÁRIO ================= */}
       <Modal
         isOpen={modalRapidoFuncionario}
-        onClose={() => setModalRapidoFuncionario(false)}
-        title="Cadastrar Funcionário Externo"
+        onClose={() => {
+          setModalRapidoFuncionario(false);
+          setFuncionarioEditando(null);
+        }}
+        title={funcionarioEditando ? "Editar Funcionário Externo" : "Cadastrar Funcionário Externo"}
       >
         <form onSubmit={handleCriarFuncionarioRapido} className="space-y-4">
           <p className="text-xs text-slate-500">
-            Este cadastro é apenas para controle de empréstimos. Este funcionário **não** terá acesso ao sistema.
+            {funcionarioEditando 
+              ? "Atualize os dados do funcionário para controle de empréstimos."
+              : "Este cadastro é apenas para controle de empréstimos. Este funcionário **não** terá acesso ao sistema."}
           </p>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Nome Completo</label>
-            <input name="nome" type="text" required className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            <input 
+              name="nome" 
+              type="text" 
+              required 
+              defaultValue={funcionarioEditando?.nome}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+            />
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Telefone / WhatsApp</label>
-            <input name="telefone" type="text" className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            <input 
+              name="telefone" 
+              type="text" 
+              defaultValue={funcionarioEditando?.telefone}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+            />
           </div>
           <div className="pt-2 flex justify-end gap-3">
-            <button type="button" onClick={() => setModalRapidoFuncionario(false)} className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg">Cancelar</button>
-            <button type="submit" disabled={salvando} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md">
-              {salvando ? "Salvando..." : "Confirmar Cadastro"}
+            <button 
+              type="button" 
+              onClick={() => {
+                setModalRapidoFuncionario(false);
+                setFuncionarioEditando(null);
+              }} 
+              className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
+            >
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition-colors">
+              {salvando ? "Salvando..." : (funcionarioEditando ? "Atualizar Dados" : "Confirmar Cadastro")}
             </button>
           </div>
         </form>

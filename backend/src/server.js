@@ -12,6 +12,7 @@ const path = require('path'); // Ferramenta nativa do Node para ler pastas
 const rotasAlmoxarifado = require('./modules/almoxarifado/rotas');
 const rotasAuth = require('./modules/auth/authRoutes');
 const rotasUsers = require('./modules/users/userRoutes');
+const rotasRelatorios = require('./modules/relatorios/rotas');
 const authMiddleware = require('./shared/middlewares/authMiddleware');
 
 const app = express();
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/almoxarifado', authMiddleware, rotasAlmoxarifado);
 app.use('/api/core', rotasAuth);
 app.use('/api/core', rotasUsers);
+app.use('/api/relatorios', authMiddleware, rotasRelatorios);
 
 // ==========================================
 // 2. CONFIGURAÇÃO DE DEPLOY (Produção)

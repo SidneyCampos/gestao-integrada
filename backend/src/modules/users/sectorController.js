@@ -21,6 +21,27 @@ class SetorController {
             return res.status(500).json({ erro: "Erro ao buscar setores." });
         }
     }
+
+    /**
+     * Cadastra um novo setor no sistema.
+     */
+    static async criar(req, res) {
+        try {
+            const { nome } = req.body;
+            if (!nome) return res.status(400).json({ erro: "Nome do setor é obrigatório." });
+
+            const novoSetor = await prisma.setor.create({
+                data: { nome: nome.toUpperCase() }
+            });
+            return res.status(201).json(novoSetor);
+        } catch (erro) {
+            console.error("[SETOR_CREATE_ERROR]", erro);
+            if (erro.code === 'P2002') {
+                return res.status(400).json({ erro: "Este setor já está cadastrado." });
+            }
+            return res.status(500).json({ erro: "Erro ao criar setor." });
+        }
+    }
 }
 
 module.exports = SetorController;

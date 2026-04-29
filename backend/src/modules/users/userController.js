@@ -94,6 +94,47 @@ class UsuarioController {
     }
 
     /**
+     * Atualiza um usuário existente, permitindo alterar nome, login, senha e setores.
+     */
+    static async atualizar(req, res) {
+        try {
+            const id = parseInt(req.params.id);
+            const { nome, login, senha, isAdmin, setoresIds } = req.body;
+
+            const updateData = {
+                nome,
+                login,
+                isAdmin: !!isAdmin,
+                setores: {
+                    set: setoresIds ? setoresIds.map(sid => ({ id: parseInt(sid) })) : []
+                }
+            };
+
+            // Só altera a senha se ela for fornecida (não vazia)
+            if (senha && senha.trim() !== "") {
+                if (senha.length < 3) {
+                    return res.status(400).json({ erro: "A nova senha deve ter pelo menos 3 caracteres." });
+                }
+                updateData.senha = senha;
+            }
+
+            const usuarioAtualizado = await prisma.usuario.update({
+                where: { id: id },
+                data: updateData,
+                include: { setores: true }
+            });
+
+            return res.status(200).json(usuarioAtualizado);
+        } catch (erro) {
+            console.error("[USER_UPDATE_ERROR]", erro);
+            if (erro.code === 'P2002') {
+                return res.status(400).json({ erro: "Este login já está em uso por outro usuário." });
+            }
+            return res.status(500).json({ erro: "Erro ao atualizar usuário." });
+        }
+    }
+
+    /**
      * Remove um usuário do sistema.
      */
     static async deletar(req, res) {

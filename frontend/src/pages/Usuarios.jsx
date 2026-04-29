@@ -1,12 +1,25 @@
 /**
  * @file Usuarios.jsx
- * @description Interface para administração de usuários e permissões.
- * Exclusiva para usuários com perfil Administrador.
+ * @description Interface para administração de usuários, permissões e setores.
  * @module Frontend/Pages/Usuarios
  */
 
 import { useState, useEffect } from "react";
-import { Users, Plus, Trash2, Shield, ShieldAlert, RefreshCw } from "lucide-react";
+import { 
+  Users, 
+  Plus, 
+  Trash2, 
+  Shield, 
+  ShieldAlert, 
+  RefreshCw, 
+  Edit3, 
+  Lock, 
+  Building2, 
+  ChevronRight,
+  MoreVertical,
+  CheckCircle2,
+  XCircle
+} from "lucide-react";
 import api from "../api/api";
 import Modal from "../components/Modal";
 
@@ -15,9 +28,15 @@ export default function Usuarios() {
   const [setores, setSetores] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
-  const [modalAberto, setModalAberto] = useState(false);
-
-  const [novoUsuario, setNovoUsuario] = useState({
+  
+  // Modais
+  const [modalUsuarioAberto, setModalUsuarioAberto] = useState(false);
+  const [modalSetorAberto, setModalSetorAberto] = useState(false);
+  
+  // Estados de formulário
+  const [editandoId, setEditandoId] = useState(null);
+  const [novoSetorNome, setNovoSetorNome] = useState("");
+  const [usuarioForm, setUsuarioForm] = useState({
     nome: "",
     login: "",
     senha: "",
@@ -45,23 +64,46 @@ export default function Usuarios() {
     buscarDados();
   }, []);
 
-  const handleCriar = async (e) => {
+  // --- AÇÕES DE USUÁRIO ---
+
+  const abrirNovoUsuario = () => {
+    setEditandoId(null);
+    setUsuarioForm({ nome: "", login: "", senha: "", isAdmin: false, setoresIds: [] });
+    setModalUsuarioAberto(true);
+  };
+
+  const abrirEdicaoUsuario = (u) => {
+    setEditandoId(u.id);
+    setUsuarioForm({
+      nome: u.nome,
+      login: u.login,
+      senha: "", // Não carrega a senha por segurança
+      isAdmin: u.isAdmin,
+      setoresIds: u.setores.map(s => s.id)
+    });
+    setModalUsuarioAberto(true);
+  };
+
+  const handleSalvarUsuario = async (e) => {
     e.preventDefault();
     try {
       setSalvando(true);
-      await api.post("/core/usuarios", novoUsuario);
-      setModalAberto(false);
-      setNovoUsuario({ nome: "", login: "", senha: "", isAdmin: false, setoresIds: [] });
+      if (editandoId) {
+        await api.put(`/core/usuarios/${editandoId}`, usuarioForm);
+      } else {
+        await api.post("/core/usuarios", usuarioForm);
+      }
+      setModalUsuarioAberto(false);
       buscarDados();
     } catch (erro) {
-      alert(erro.response?.data?.erro || "Erro ao criar usuário.");
+      alert(erro.response?.data?.erro || "Erro ao salvar usuário.");
     } finally {
       setSalvando(false);
     }
   };
 
   const handleDeletar = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir este usuário?")) return;
+    if (!window.confirm("Deseja realmente remover este acesso?")) return;
     try {
       await api.delete(`/core/usuarios/${id}`);
       buscarDados();
@@ -71,75 +113,163 @@ export default function Usuarios() {
   };
 
   const toggleSetor = (setorId) => {
-    const ids = [...novoUsuario.setoresIds];
+    const ids = [...usuarioForm.setoresIds];
     const index = ids.indexOf(setorId);
     if (index > -1) ids.splice(index, 1);
     else ids.push(setorId);
-    setNovoUsuario({ ...novoUsuario, setoresIds: ids });
+    setUsuarioForm({ ...usuarioForm, setoresIds: ids });
+  };
+
+  // --- AÇÕES DE SETOR ---
+
+  const handleCriarSetor = async (e) => {
+    e.preventDefault();
+    try {
+      setSalvando(true);
+      await api.post("/core/setores", { nome: novoSetorNome });
+      setModalSetorAberto(false);
+      setNovoSetorNome("");
+      buscarDados();
+    } catch (erro) {
+      alert(erro.response?.data?.erro || "Erro ao criar setor.");
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-600" />
-            Gestão de Usuários
+          <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3 tracking-tight">
+            <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-100">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            Gestão de Acessos
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Controle quem acessa o sistema e quais são seus privilégios.
-          </p>
+          <p className="text-slate-500 mt-2 text-sm font-medium">Controle de usuários, setores e privilégios administrativos.</p>
         </div>
-        <button
-          onClick={() => setModalAberto(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Usuário
-        </button>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => setModalSetorAberto(true)}
+            className="flex-1 md:flex-none border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+          >
+            <Building2 className="w-4 h-4 text-slate-400" />
+            Novo Setor
+          </button>
+          <button
+            onClick={abrirNovoUsuario}
+            className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-blue-100 transition-all active:scale-95"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Usuário
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      {/* LISTAGEM */}
+      <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
         {carregando ? (
-          <div className="p-8 text-center text-slate-500 animate-pulse">Carregando usuários...</div>
+          <div className="p-20 text-center text-slate-400 animate-pulse font-bold tracking-widest uppercase text-xs">Sincronizando Dados...</div>
         ) : (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
-                <th className="px-6 py-4">Servidor</th>
-                <th className="px-6 py-4">Login</th>
-                <th className="px-6 py-4">Setores / Acesso</th>
-                <th className="px-6 py-4 text-right">Ações</th>
+          <table className="w-full text-left border-collapse block lg:table">
+            <thead className="hidden lg:table-header-group">
+              <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase text-slate-500 font-black tracking-widest">
+                <th className="px-8 py-5">Servidor / Login</th>
+                <th className="px-8 py-5 text-center">Perfil</th>
+                <th className="px-8 py-5">Setores Autorizados</th>
+                <th className="px-8 py-5 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 block lg:table-row-group">
               {usuarios.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-slate-800">{u.nome}</td>
-                  <td className="px-6 py-4 text-slate-500 font-mono text-xs">{u.login}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
+                <tr key={u.id} className="hover:bg-slate-50/80 transition-colors block lg:table-row group">
+                  {/* MOBILE VIEW (CARD) */}
+                  <td className="lg:hidden p-5 block">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm ${u.isAdmin ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                          {u.nome.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 leading-none">{u.nome}</p>
+                          <p className="text-[10px] font-mono text-slate-400 mt-1">{u.login}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => abrirEdicaoUsuario(u)} className="p-2 text-slate-400 hover:text-blue-600"><Edit3 className="w-4 h-4" /></button>
+                        <button onClick={() => handleDeletar(u.id)} className="p-2 text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 items-center">
                       {u.isAdmin ? (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-[10px] font-bold flex items-center gap-1">
-                          <ShieldAlert className="w-3 h-3" /> ADMIN GERAL
+                        <span className="px-3 py-1 bg-purple-600 text-white rounded-full text-[9px] font-black uppercase flex items-center gap-1 shadow-sm shadow-purple-100">
+                          <ShieldAlert className="w-3 h-3" /> Admin Geral
                         </span>
                       ) : (
                         u.setores.map(s => (
-                          <span key={s.id} className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100">
+                          <span key={s.id} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-bold border border-slate-200 uppercase tracking-tighter">
                             {s.nome}
                           </span>
                         ))
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDeletar(u.id)}
-                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                      title="Excluir Usuário"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+
+                  {/* DESKTOP VIEW */}
+                  <td className="px-8 py-5 hidden lg:table-cell">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs ${u.isAdmin ? 'bg-purple-600 text-white shadow-lg shadow-purple-100' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'}`}>
+                        {u.nome.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800 text-sm">{u.nome}</p>
+                        <p className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter mt-0.5">{u.login}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-5 hidden lg:table-cell text-center">
+                    {u.isAdmin ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-[10px] font-black uppercase tracking-tighter border border-purple-200">
+                        <ShieldAlert className="w-3.5 h-3.5" /> Administrador
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-tighter border border-blue-200">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Servidor
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-8 py-5 hidden lg:table-cell">
+                    <div className="flex flex-wrap gap-1.5 max-w-xs">
+                      {!u.isAdmin && u.setores.length === 0 && <span className="text-[10px] text-slate-400 italic font-medium">Nenhum setor atribuído</span>}
+                      {!u.isAdmin && u.setores.map(s => (
+                        <span key={s.id} className="px-2.5 py-1 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-black uppercase border border-slate-200 tracking-tighter">
+                          {s.nome}
+                        </span>
+                      ))}
+                      {u.isAdmin && <span className="text-[10px] text-purple-400 font-bold italic">Acesso completo a todos os módulos</span>}
+                    </div>
+                  </td>
+                  <td className="px-8 py-5 hidden lg:table-cell text-right">
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => abrirEdicaoUsuario(u)}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                        title="Editar Usuário"
+                      >
+                        <Edit3 className="w-4.5 h-4.5" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeletar(u.id)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                        title="Excluir"
+                      >
+                        <Trash2 className="w-4.5 h-4.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -148,94 +278,148 @@ export default function Usuarios() {
         )}
       </div>
 
+      {/* MODAL: USUÁRIO */}
       <Modal
-        isOpen={modalAberto}
-        onClose={() => setModalAberto(false)}
-        title="Cadastrar Novo Servidor"
+        isOpen={modalUsuarioAberto}
+        onClose={() => setModalUsuarioAberto(false)}
+        title={editandoId ? "Editar Credenciais" : "Cadastrar Novo Servidor"}
+        variant={usuarioForm.isAdmin ? "blue" : "primary"}
       >
-        <form onSubmit={handleCriar} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nome Completo</label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ex: João da Silva"
-              value={novoUsuario.nome}
-              onChange={(e) => setNovoUsuario({ ...novoUsuario, nome: e.target.value })}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Login</label>
+        <form onSubmit={handleSalvarUsuario} className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome Completo</label>
               <input
                 type="text"
                 required
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="login.servidor"
-                value={novoUsuario.login}
-                onChange={(e) => setNovoUsuario({ ...novoUsuario, login: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-bold text-sm transition-all"
+                placeholder="João da Silva"
+                value={usuarioForm.nome}
+                onChange={(e) => setUsuarioForm({ ...usuarioForm, nome: e.target.value })}
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Senha Inicial</label>
-              <input
-                type="password"
-                required
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="******"
-                value={novoUsuario.senha}
-                onChange={(e) => setNovoUsuario({ ...novoUsuario, senha: e.target.value })}
-              />
-            </div>
-          </div>
 
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-            <label className="flex items-center gap-2 cursor-pointer group mb-3">
-              <input
-                type="checkbox"
-                className="w-4 h-4 text-blue-600 rounded"
-                checked={novoUsuario.isAdmin}
-                onChange={(e) => setNovoUsuario({ ...novoUsuario, isAdmin: e.target.checked })}
-              />
-              <span className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">
-                Administrador Geral (Acesso Total)
-              </span>
-            </label>
-
-            {!novoUsuario.isAdmin && (
-              <div className="space-y-2">
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Atribuir Setores</p>
-                <div className="flex flex-wrap gap-2">
-                  {setores.map(s => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => toggleSetor(s.id)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${novoUsuario.setoresIds.includes(s.id) ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'}`}
-                    >
-                      {s.nome}
-                    </button>
-                  ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Login de Acesso</label>
+                <div className="relative">
+                  <Lock className="w-3.5 h-3.5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                  <input
+                    type="text"
+                    required
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-mono text-sm transition-all"
+                    placeholder="login.servidor"
+                    value={usuarioForm.login}
+                    onChange={(e) => setUsuarioForm({ ...usuarioForm, login: e.target.value })}
+                  />
                 </div>
               </div>
-            )}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  {editandoId ? "Nova Senha (opcional)" : "Senha Inicial"}
+                </label>
+                <input
+                  type="password"
+                  required={!editandoId}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-bold text-sm transition-all"
+                  placeholder="******"
+                  value={usuarioForm.senha}
+                  onChange={(e) => setUsuarioForm({ ...usuarioForm, senha: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="p-5 bg-slate-50 rounded-3xl border border-slate-200 space-y-4">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 text-blue-600 rounded-lg border-slate-300 focus:ring-blue-200 transition-all"
+                  checked={usuarioForm.isAdmin}
+                  onChange={(e) => setUsuarioForm({ ...usuarioForm, isAdmin: e.target.checked })}
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-slate-700 uppercase tracking-tighter">Administrador Geral</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Permite acesso a todos os módulos e configurações.</span>
+                </div>
+              </label>
+
+              {!usuarioForm.isAdmin && (
+                <div className="pt-4 border-t border-slate-200 space-y-3">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Atribuir Módulos de Acesso</p>
+                  <div className="flex flex-wrap gap-2">
+                    {setores.length === 0 && <p className="text-[10px] text-slate-400 italic">Nenhum setor cadastrado.</p>}
+                    {setores.map(s => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => toggleSetor(s.id)}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase border transition-all ${usuarioForm.setoresIds.includes(s.id) ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white border-slate-200 text-slate-400 hover:border-blue-400 hover:text-blue-600'}`}
+                      >
+                        {s.nome}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="pt-4 flex justify-end gap-3">
+          <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setModalAberto(false)}
-              className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
+              onClick={() => setModalUsuarioAberto(false)}
+              className="flex-1 px-6 py-3.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-2xl transition-all"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={salvando}
-              className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md flex items-center gap-2"
+              className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-blue-100 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
             >
-              {salvando ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Salvar Usuário"}
+              {salvando ? <RefreshCw className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5" /> {editandoId ? "Atualizar Dados" : "Criar Acesso"}</>}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL: NOVO SETOR */}
+      <Modal
+        isOpen={modalSetorAberto}
+        onClose={() => setModalSetorAberto(false)}
+        title="Cadastrar Novo Módulo/Setor"
+      >
+        <form onSubmit={handleCriarSetor} className="space-y-6">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome do Setor</label>
+            <input
+              type="text"
+              required
+              autoFocus
+              className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-bold text-base transition-all"
+              placeholder="Ex: TI, ALMOXARIFADO, RH"
+              value={novoSetorNome}
+              onChange={(e) => setNovoSetorNome(e.target.value)}
+            />
+            <p className="text-[10px] text-slate-400 font-medium italic mt-2">
+              * O nome do setor será usado como base para as permissões de acesso.
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setModalSetorAberto(false)}
+              className="flex-1 px-6 py-3.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-2xl transition-all"
+            >
+              Voltar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando}
+              className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white px-6 py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-slate-100 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {salvando ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Criar Setor"}
             </button>
           </div>
         </form>

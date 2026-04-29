@@ -13,10 +13,12 @@ const adminMiddleware = require('../../shared/middlewares/adminMiddleware');
 
 router.get('/usuarios', authMiddleware, userController.listar);
 router.post('/usuarios', authMiddleware, adminMiddleware, userController.criar);
+router.put('/usuarios/:id', authMiddleware, adminMiddleware, userController.atualizar);
 router.delete('/usuarios/:id', authMiddleware, adminMiddleware, userController.deletar);
 router.patch('/usuarios/:id/senha', authMiddleware, userController.alterarSenha);
 
-// Rota de setores (dropdowns)
+// Rota de setores
 router.get('/setores', authMiddleware, sectorController.listar);
+router.post('/setores', authMiddleware, adminMiddleware, sectorController.criar);
 
 module.exports = router;
