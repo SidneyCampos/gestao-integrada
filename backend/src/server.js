@@ -9,9 +9,11 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path'); // Ferramenta nativa do Node para ler pastas
 
-const rotasAlmoxarifado = require('./modulos/almoxarifado/rotas');
-const rotasCore = require('./core/rotas');
-const authMiddleware = require('./core/authMiddleware');
+const rotasAlmoxarifado = require('./modules/almoxarifado/rotas');
+const rotasAuth = require('./modules/auth/authRoutes');
+const rotasUsers = require('./modules/users/userRoutes');
+const rotasRelatorios = require('./modules/relatorios/rotas');
+const authMiddleware = require('./shared/middlewares/authMiddleware');
 
 const app = express();
 app.use(cors());
@@ -20,7 +22,9 @@ app.use(express.json());
 // 1. ROTAS DE API (O Cérebro do Banco)
 // ==========================================
 app.use('/api/almoxarifado', authMiddleware, rotasAlmoxarifado);
-app.use('/api/core', rotasCore);
+app.use('/api/core', rotasAuth);
+app.use('/api/core', rotasUsers);
+app.use('/api/relatorios', authMiddleware, rotasRelatorios);
 
 // ==========================================
 // 2. CONFIGURAÇÃO DE DEPLOY (Produção)

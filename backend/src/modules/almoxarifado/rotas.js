@@ -11,11 +11,13 @@ const router = express.Router();
 const FerramentaController = require('./FerramentaController');
 const EmprestimoController = require('./EmprestimoController');
 const FuncionarioController = require('./FuncionarioController');
-const sectorMiddleware = require('../../core/sectorMiddleware');
+const ConsumoController = require('./ConsumoController');
+const sectorMiddleware = require('../../shared/middlewares/sectorMiddleware');
 
 // --- Rotas de Ferramentas ---
 router.get('/ferramentas', FerramentaController.listar);
 router.post('/ferramentas', FerramentaController.criar);
+router.delete('/ferramentas/:id', FerramentaController.deletar);
 
 // ROTA DE AJUSTE RÁPIDO (Protegida para TI ou Admin)
 router.patch('/ferramentas/:id/ajustar-estoque', sectorMiddleware('TI'), FerramentaController.ajustarEstoque);
@@ -32,5 +34,11 @@ router.patch('/emprestimos/:id/devolver', EmprestimoController.devolver);
 router.get('/funcionarios', FuncionarioController.listar);
 router.post('/funcionarios', FuncionarioController.criar);
 router.delete('/funcionarios/:id', FuncionarioController.deletar);
+
+// --- Rotas de Materiais de Consumo ---
+router.get('/consumo', ConsumoController.listarRequisicoes);
+router.post('/consumo', ConsumoController.salvarRequisicao);
+router.put('/consumo/:id', ConsumoController.atualizarRequisicao);
+router.delete('/consumo/:id', ConsumoController.deletarRequisicao);
 
 module.exports = router;

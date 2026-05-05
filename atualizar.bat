@@ -10,7 +10,7 @@ call pm2 stop Gestao-Integrada
 
 echo.
 echo [2/6] Baixando novidades do GitHub...
-git pull origin main
+git pull origin antigravity
 
 echo.
 echo [3/6] Instalando dependencias do Backend...

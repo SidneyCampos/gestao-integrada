@@ -9,7 +9,7 @@
 import { useState, useMemo } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 // O GRANDE CULPADO ESTAVA AQUI: Faltava o X na lista de ícones!
-import { Wrench, Users, Car, LogOut, MoreHorizontal, X, Cpu } from "lucide-react";
+import { Wrench, Users, Car, LogOut, MoreHorizontal, X, Cpu, PieChart } from "lucide-react";
 import axios from "axios";
 import { hasPermission } from "../utils/auth";
 import Modal from "./Modal";
@@ -22,8 +22,14 @@ const modulosDisponiveis = [
     isPrimary: true,
   },
   {
+    nome: "Relatórios",
+    path: "/relatorios",
+    icone: PieChart,
+    isPrimary: true,
+  },
+  {
     nome: "TI",
-    path: "/ti/informatica",
+    path: "/ti",
     icone: Cpu,
     isPrimary: true,
   },
@@ -104,7 +110,7 @@ export default function Layout({ usuario, onLogout }) {
   return (
     <div className="flex h-[100dvh] bg-slate-100 text-slate-900 font-sans overflow-hidden">
       {/* ================= BARRA LATERAL (DESKTOP) ================= */}
-      <aside className="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col shadow-xl z-20 shrink-0">
+      <aside className="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col shadow-xl z-20 shrink-0 print:hidden">
         <div className="h-20 bg-white flex items-center justify-center p-2 border-b border-slate-200">
           <img
             src="/logo-completo.png"
@@ -139,7 +145,7 @@ export default function Layout({ usuario, onLogout }) {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* ================= HEADER (DESKTOP E MOBILE) ================= */}
-        <header className="h-20 shrink-0 bg-white border-b border-slate-200">
+        <header className="h-20 shrink-0 bg-white border-b border-slate-200 print:hidden">
           <div className="hidden md:flex items-center justify-between px-8 h-full">
             <h2 className="text-xl font-bold text-slate-700 tracking-tight">
               Gestão Integrada
@@ -187,7 +193,7 @@ export default function Layout({ usuario, onLogout }) {
       </div>
 
       {/* ================= BARRA DE NAVEGAÇÃO INFERIOR (MOBILE) ================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-8px_15px_-3px_rgba(0,0,0,0.05)] z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-8px_15px_-3px_rgba(0,0,0,0.05)] z-50 print:hidden">
         {menuMaisAberto && (
           <div
             className="fixed inset-0 z-40 bg-slate-900/20"
@@ -221,8 +227,8 @@ export default function Layout({ usuario, onLogout }) {
               className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive(modulo.path) ? "text-blue-600" : "text-slate-500"}`}
             >
               <modulo.icone className="h-6 w-6" />
-              <span className="text-[10px] font-semibold tracking-wide">
-                {modulo.nome.substring(0, 6)}
+              <span className="text-[9px] font-bold tracking-tight text-center leading-none">
+                {modulo.nome.length > 8 ? modulo.nome.split(' ')[0].substring(0, 5) : modulo.nome}
               </span>
             </Link>
           ))}
@@ -232,7 +238,7 @@ export default function Layout({ usuario, onLogout }) {
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${menuMaisAberto ? "text-blue-600" : "text-slate-500"}`}
           >
             <MoreHorizontal className="h-6 w-6" />
-            <span className="text-[10px] font-semibold tracking-wide">
+            <span className="text-[9px] font-bold tracking-tight">
               Mais
             </span>
           </button>
@@ -242,7 +248,7 @@ export default function Layout({ usuario, onLogout }) {
             className="flex flex-col items-center justify-center w-full h-full space-y-1 text-red-500/80 hover:text-red-600"
           >
             <LogOut className="h-6 w-6" />
-            <span className="text-[10px] font-semibold tracking-wide">
+            <span className="text-[9px] font-bold tracking-tight">
               Sair
             </span>
           </button>

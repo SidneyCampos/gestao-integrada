@@ -6,7 +6,7 @@
  * @module Core/AuthController
  */
 
-const prisma = require('./prisma');
+const prisma = require('../../shared/database/prisma');
 const jwt = require('jsonwebtoken');
 
 class AuthController {

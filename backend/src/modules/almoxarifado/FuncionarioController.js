@@ -5,7 +5,7 @@
  * @module Almoxarifado/FuncionarioController
  */
 
-const prisma = require('../../core/prisma');
+const prisma = require('../../shared/database/prisma');
 
 class FuncionarioController {
     /**

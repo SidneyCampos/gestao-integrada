@@ -17,8 +17,12 @@ import {
   CheckCircle,
   Clock,
   Trash2,
+  Users,
+  Package,
+  History,
+  Edit3,
 } from "lucide-react";
-import axios from "axios";
+import api from "../../api/api";
 import Modal from "../../components/Modal";
 
 export default function Ferramentas() {
@@ -34,12 +38,12 @@ export default function Ferramentas() {
   const [salvando, setSalvando] = useState(false);
   const [termoBusca, setTermoBusca] = useState("");
 
-  const [menuAbertoId, setMenuAbertoId] = useState(null);
   const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
   const [modalEmprestimoAberto, setModalEmprestimoAberto] = useState(false);
   const [modalRapidoFuncionario, setModalRapidoFuncionario] = useState(false);
 
   const [ferramentaSelecionada, setFerramentaSelecionada] = useState(null);
+  const [funcionarioEditando, setFuncionarioEditando] = useState(null);
   const [usuarioIdSelecionado, setUsuarioIdSelecionado] = useState("");
   const [qtdEmprestimoSelecionada, setQtdEmprestimoSelecionada] = useState(1); // NOVA LINHA AQUI
 
@@ -48,6 +52,15 @@ export default function Ferramentas() {
     codigoPatrimonio: "",
     quantidadeTotal: 1,
   });
+
+  const [menuAbertoId, setMenuAbertoId] = useState(null);
+
+  // Fecha o menu de opções ao clicar fora dele
+  useEffect(() => {
+    const handleCliqueFora = () => setMenuAbertoId(null);
+    window.addEventListener("click", handleCliqueFora);
+    return () => window.removeEventListener("click", handleCliqueFora);
+  }, []);
 
   // ================= FUNÇÕES DE BUSCA (API) =================
   /**
@@ -58,10 +71,10 @@ export default function Ferramentas() {
     try {
       setCarregando(true);
       // Busca ferramentas, usuários e empréstimos!
-      const resFerramentas = await axios.get("/api/almoxarifado/ferramentas");
-      const resUsuarios = await axios.get("/api/core/usuarios");
-      const resFuncionarios = await axios.get("/api/almoxarifado/funcionarios");
-      const resEmprestimos = await axios.get("/api/almoxarifado/emprestimos");
+      const resFerramentas = await api.get("/almoxarifado/ferramentas?excluirCategoria=Informática");
+      const resUsuarios = await api.get("/core/usuarios");
+      const resFuncionarios = await api.get("/almoxarifado/funcionarios");
+      const resEmprestimos = await api.get("/almoxarifado/emprestimos");
 
       setFerramentas(resFerramentas.data);
       // Unifica os usuários do sistema com os funcionários externos para o Almoxarifado
@@ -88,10 +101,11 @@ export default function Ferramentas() {
     e.preventDefault();
     try {
       setSalvando(true);
-      await axios.post("/api/almoxarifado/ferramentas", {
+      await api.post("/almoxarifado/ferramentas", {
         nome: novaFerramenta.nome,
         codigoPatrimonio: novaFerramenta.codigoPatrimonio,
         quantidadeTotal: parseInt(novaFerramenta.quantidadeTotal),
+        categoria: "Ferramenta",
       });
       setModalCadastroAberto(false);
       setNovaFerramenta({ nome: "", codigoPatrimonio: "", quantidadeTotal: 1 });
@@ -109,7 +123,7 @@ export default function Ferramentas() {
 
     try {
       setSalvando(true);
-      await axios.post("/api/almoxarifado/emprestimos", {
+      await api.post("/almoxarifado/emprestimos", {
         usuarioId: parseInt(usuarioIdSelecionado),
         ferramentaId: ferramentaSelecionada.id,
         quantidade: parseInt(qtdEmprestimoSelecionada),
@@ -139,13 +153,19 @@ export default function Ferramentas() {
 
     try {
       setSalvando(true);
-      const res = await axios.post("/api/almoxarifado/funcionarios", { nome, telefone });
-      // Atualiza a lista local e já seleciona o novo funcionário
-      setUsuarios([...usuarios, res.data]);
-      setUsuarioIdSelecionado(res.data.id);
+      if (funcionarioEditando) {
+        await api.put(`/almoxarifado/funcionarios/${funcionarioEditando.id}`, { nome, telefone });
+      } else {
+        const res = await api.post("/almoxarifado/funcionarios", { nome, telefone });
+        setUsuarioIdSelecionado(res.data.id);
+      }
+      
       setModalRapidoFuncionario(false);
+      setFuncionarioEditando(null);
+      await buscarDadosIniciais(); // Atualiza tudo
+      setAbaAtiva("equipe"); // Manda para a aba da equipe externa
     } catch (erro) {
-      alert("Erro ao cadastrar funcionário.");
+      alert(erro.response?.data?.erro || "Erro ao processar funcionário.");
     } finally {
       setSalvando(false);
     }
@@ -159,10 +179,27 @@ export default function Ferramentas() {
 
     try {
       setCarregando(true);
-      await axios.delete(`/api/almoxarifado/funcionarios/${id}`);
+      await api.delete(`/almoxarifado/funcionarios/${id}`);
       buscarDadosIniciais();
     } catch (erro) {
       alert(erro.response?.data?.erro || "Erro ao excluir funcionário.");
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  /**
+   * Remove uma ferramenta do banco.
+   */
+  const handleDeletarFerramenta = async (id) => {
+    if (!window.confirm("ATENÇÃO: Você tem certeza que deseja excluir esta ferramenta? Esta ação não pode ser desfeita e só é permitida se não houver histórico de uso.")) return;
+
+    try {
+      setCarregando(true);
+      await api.delete(`/almoxarifado/ferramentas/${id}`);
+      buscarDadosIniciais();
+    } catch (erro) {
+      alert(erro.response?.data?.erro || "Erro ao excluir ferramenta.");
     } finally {
       setCarregando(false);
     }
@@ -179,8 +216,8 @@ export default function Ferramentas() {
     try {
       setCarregando(true);
       // Chama nossa rota PATCH que criamos no backend
-      await axios.patch(
-        `/api/almoxarifado/emprestimos/${emprestimoId}/devolver`,
+      await api.patch(
+        `/almoxarifado/emprestimos/${emprestimoId}/devolver`,
       );
       buscarDadosIniciais(); // Atualiza tudo (o status vai para devolvido e a qtd aumenta)
     } catch (erro) {
@@ -237,46 +274,68 @@ export default function Ferramentas() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={buscarDadosIniciais}
-            className="p-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50"
+            className="p-2.5 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+            title="Atualizar Dados"
           >
             <RefreshCw
               className={`w-5 h-5 ${carregando ? "animate-spin text-blue-600" : ""}`}
             />
           </button>
-          <button
-            onClick={() => setModalCadastroAberto(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Nova Ferramenta
-          </button>
+          
+          <div className="flex flex-1 gap-2">
+            <button
+              onClick={() => setModalRapidoFuncionario(true)}
+              className="flex-1 sm:flex-none bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-2.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
+            >
+              <Users className="w-4 h-4 text-blue-600" />
+              <span className="hidden xs:inline">Equipe</span>
+              <span className="xs:hidden">Equipe</span>
+            </button>
+
+            <button
+              onClick={() => setModalCadastroAberto(true)}
+              className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 py-2.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden xs:inline text-nowrap">Nova Ferramenta</span>
+              <span className="xs:hidden">Ferramenta</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ================= NAVEGAÇÃO POR ABAS (TABS) ================= */}
-      <div className="flex bg-slate-200 p-1 rounded-xl w-full max-w-md">
+      <div className="flex bg-slate-200/60 p-1.5 rounded-2xl w-full max-w-xl shadow-inner border border-slate-300/30 backdrop-blur-sm">
         <button
           onClick={() => setAbaAtiva("estoque")}
-          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${abaAtiva === "estoque" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 ${abaAtiva === "estoque" ? "bg-white text-blue-600 shadow-md scale-[1.02]" : "text-slate-500 hover:text-slate-700 hover:bg-slate-300/40"}`}
         >
-          Acervo e Estoque
+          <Package className={`w-4 h-4 ${abaAtiva === "estoque" ? "text-blue-600" : "text-slate-400"}`} />
+          <span className="hidden sm:inline">Acervo e Estoque</span>
+          <span className="sm:hidden">Estoque</span>
         </button>
-          <button
-            onClick={() => setAbaAtiva("emprestimos")}
-            className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${abaAtiva === "emprestimos" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-          >
-            Histórico / Devolução
-          </button>
-          <button
-            onClick={() => setAbaAtiva("equipe")}
-            className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${abaAtiva === "equipe" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-          >
-            Equipe Externa
-          </button>
-        </div>
+        
+        <button
+          onClick={() => setAbaAtiva("emprestimos")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 ${abaAtiva === "emprestimos" ? "bg-white text-blue-600 shadow-md scale-[1.02]" : "text-slate-500 hover:text-slate-700 hover:bg-slate-300/40"}`}
+        >
+          <History className={`w-4 h-4 ${abaAtiva === "emprestimos" ? "text-blue-600" : "text-slate-400"}`} />
+          <span className="hidden sm:inline">Histórico / Devolução</span>
+          <span className="sm:hidden">Histórico</span>
+        </button>
+
+        <button
+          onClick={() => setAbaAtiva("equipe")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 ${abaAtiva === "equipe" ? "bg-white text-blue-600 shadow-md scale-[1.02]" : "text-slate-500 hover:text-slate-700 hover:bg-slate-300/40"}`}
+        >
+          <Users className={`w-4 h-4 ${abaAtiva === "equipe" ? "text-blue-600" : "text-slate-400"}`} />
+          <span className="hidden sm:inline">Equipe Externa</span>
+          <span className="sm:hidden">Equipe</span>
+        </button>
+      </div>
 
       {/* ================= ÁREA DE CONTEÚDO (TABELA OU CARTÕES) ================= */}
       <div className="bg-transparent lg:bg-white lg:border lg:border-slate-200 rounded-xl lg:shadow-sm overflow-visible pb-32 lg:pb-0">
@@ -321,7 +380,16 @@ export default function Ferramentas() {
                     <tr key={f.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 font-bold text-slate-700">{f.nome}</td>
                       <td className="px-6 py-4 text-slate-500 text-sm">{f.telefone || "---"}</td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right space-x-2">
+                        <button 
+                          onClick={() => {
+                            setFuncionarioEditando(f);
+                            setModalRapidoFuncionario(true);
+                          }}
+                          className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
                         <button 
                           onClick={() => handleDeletarFuncionario(f.id)}
                           className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
@@ -366,7 +434,7 @@ export default function Ferramentas() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="grid grid-cols-1 md:grid-cols-2 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
+                  <tbody className="grid grid-cols-1 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
                     {ferramentasFiltradas.length === 0 && (
                       <tr className="lg:table-row">
                          <td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic">
@@ -387,11 +455,11 @@ export default function Ferramentas() {
                             {ferramenta.codigoPatrimonio || "S/N"}
                           </span>
                         </td>
-                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell font-bold text-slate-900 border-b border-slate-100 lg:border-none">
-                          <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
+                        <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell font-bold text-slate-900 border-b border-slate-100 lg:border-none gap-4">
+                          <span className="lg:hidden text-[10px] font-extrabold uppercase text-slate-400 min-w-fit">
                             Descrição
                           </span>
-                          {ferramenta.nome}
+                          <span className="text-right lg:text-left">{ferramenta.nome}</span>
                         </td>
                         <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center border-b border-slate-100 lg:border-none">
                           <span className="lg:hidden text-xs font-bold uppercase text-slate-400">
@@ -421,49 +489,56 @@ export default function Ferramentas() {
                               : "Esgotado"}
                           </span>
                         </td>
-                        <td className="px-4 py-3 lg:py-2 flex justify-end lg:table-cell text-right relative">
-                          <button
-                            onClick={() =>
-                              setMenuAbertoId(
-                                menuAbertoId === ferramenta.id
-                                  ? null
-                                  : ferramenta.id,
-                              )
-                            }
-                            className="flex items-center gap-2 p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg w-full lg:w-auto justify-center transition-colors"
-                          >
-                            <MoreVertical className="w-5 h-5 hidden lg:block" />
-                            <span className="lg:hidden font-semibold text-sm">
-                              Gerenciar
-                            </span>
-                          </button>
-                          {menuAbertoId === ferramenta.id && (
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 flex flex-col overflow-hidden text-left animate-in fade-in zoom-in-95">
+                        <td className="px-4 py-3 lg:py-2 block lg:table-cell border-b border-slate-100 lg:border-none bg-slate-50/50 lg:bg-transparent">
+                          <div className="flex items-center justify-end gap-2 lg:gap-3">
+                            <button
+                              disabled={ferramenta.qtdDisponivel <= 0}
+                              onClick={() => {
+                                setFerramentaSelecionada(ferramenta);
+                                setModalEmprestimoAberto(true);
+                              }}
+                              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 lg:py-1.5 bg-blue-600 lg:bg-blue-50 text-white lg:text-blue-700 hover:bg-blue-700 lg:hover:bg-blue-600 lg:hover:text-white rounded-lg transition-all font-bold text-xs border border-blue-600 lg:border-blue-100 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm lg:shadow-none"
+                            >
+                              <ArrowRightLeft className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                              Emprestar
+                            </button>
+                            
+                            {/* MENU DE GERENCIAMENTO (3 PONTINHOS) */}
+                            <div className="relative">
                               <button
-                                disabled={ferramenta.qtdDisponivel <= 0}
-                                onClick={() => {
-                                  setFerramentaSelecionada(ferramenta);
-                                  setModalEmprestimoAberto(true);
-                                  setMenuAbertoId(null);
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Evita que o listener de clique fora feche o menu imediatamente
+                                  setMenuAbertoId(menuAbertoId === ferramenta.id ? null : ferramenta.id);
                                 }}
-                                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-blue-50 text-blue-700 font-semibold border-b border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className={`p-2 rounded-lg transition-all ${menuAbertoId === ferramenta.id ? "bg-blue-100 text-blue-600" : "text-slate-400 hover:text-blue-600 hover:bg-blue-50"}`}
+                                title="Gerenciar Ferramenta"
                               >
-                                <ArrowRightLeft className="w-4 h-4" /> Emprestar
+                                <MoreVertical className="w-5 h-5 lg:w-4 lg:h-4" />
                               </button>
+
+                              {menuAbertoId === ferramenta.id && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                                  <div className="px-4 py-2 border-b border-slate-100 bg-slate-50">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Opções</p>
+                                  </div>
+                                  
+                                  <button
+                                    onClick={() => handleDeletarFerramenta(ferramenta.id)}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-bold"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Excluir Item
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {/* ESTE CÓDIGO INVISÍVEL FECHA O MENU SE CLICAR FORA DELE */}
-                {menuAbertoId && (
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setMenuAbertoId(null)}
-                  ></div>
-                )}
+                {/* Espaço extra para mobile no final da lista */}
               </>
             )}
 
@@ -740,28 +815,53 @@ export default function Ferramentas() {
         </form>
       </Modal>
 
-      {/* ================= MODAL: CADASTRO RÁPIDO DE FUNCIONÁRIO ================= */}
+      {/* ================= MODAL: CADASTRO/EDIÇÃO DE FUNCIONÁRIO ================= */}
       <Modal
         isOpen={modalRapidoFuncionario}
-        onClose={() => setModalRapidoFuncionario(false)}
-        title="Cadastrar Funcionário Externo"
+        onClose={() => {
+          setModalRapidoFuncionario(false);
+          setFuncionarioEditando(null);
+        }}
+        title={funcionarioEditando ? "Editar Funcionário Externo" : "Cadastrar Funcionário Externo"}
       >
         <form onSubmit={handleCriarFuncionarioRapido} className="space-y-4">
           <p className="text-xs text-slate-500">
-            Este cadastro é apenas para controle de empréstimos. Este funcionário **não** terá acesso ao sistema.
+            {funcionarioEditando 
+              ? "Atualize os dados do funcionário para controle de empréstimos."
+              : "Este cadastro é apenas para controle de empréstimos. Este funcionário **não** terá acesso ao sistema."}
           </p>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Nome Completo</label>
-            <input name="nome" type="text" required className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            <input 
+              name="nome" 
+              type="text" 
+              required 
+              defaultValue={funcionarioEditando?.nome}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+            />
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Telefone / WhatsApp</label>
-            <input name="telefone" type="text" className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            <input 
+              name="telefone" 
+              type="text" 
+              defaultValue={funcionarioEditando?.telefone}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+            />
           </div>
           <div className="pt-2 flex justify-end gap-3">
-            <button type="button" onClick={() => setModalRapidoFuncionario(false)} className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg">Cancelar</button>
-            <button type="submit" disabled={salvando} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md">
-              {salvando ? "Salvando..." : "Confirmar Cadastro"}
+            <button 
+              type="button" 
+              onClick={() => {
+                setModalRapidoFuncionario(false);
+                setFuncionarioEditando(null);
+              }} 
+              className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
+            >
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition-colors">
+              {salvando ? "Salvando..." : (funcionarioEditando ? "Atualizar Dados" : "Confirmar Cadastro")}
             </button>
           </div>
         </form>
