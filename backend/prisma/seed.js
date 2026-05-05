@@ -17,6 +17,18 @@ async function main() {
     create: { nome: 'Almoxarifado' },
   });
 
+  const setorPC = await prisma.setor.upsert({
+    where: { nome: 'POLICIA CIVIL' },
+    update: {},
+    create: { nome: 'POLICIA CIVIL' },
+  });
+
+  const setorPM = await prisma.setor.upsert({
+    where: { nome: 'POLICIA MILITAR' },
+    update: {},
+    create: { nome: 'POLICIA MILITAR' },
+  });
+
   console.log('Setores criados/verificados.');
 
   // 2. Criar Usuários

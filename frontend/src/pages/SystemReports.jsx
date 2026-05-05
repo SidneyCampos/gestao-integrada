@@ -74,18 +74,28 @@ export default function SystemReports({ usuarioLogado }) {
         <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
             
             {/* ================= CABEÇALHO OFICIAL (APARECE APENAS NO PDF/PRINT) ================= */}
-            <div className="hidden print:flex flex-col items-center text-center mb-10 border-b-2 border-slate-900 pb-6">
-                <div className="flex items-center gap-4 mb-4">
-                     {/* Logo Placeholder - No PDF Real usaríamos a imagem do sistema */}
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center border border-slate-300">
-                        <img src="/logo-completo.png" alt="Logo" className="w-12 h-12 object-contain" />
-                    </div>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-black text-slate-900 uppercase">Prefeitura Municipal de Iguatama</h1>
-                        <p className="text-sm font-bold text-slate-600 uppercase tracking-widest">Estado de Minas Gerais</p>
-                    </div>
+            <div className="hidden print:grid grid-cols-3 items-center mb-10 border-b-2 border-slate-900 pb-6 w-full">
+                {/* Logo Prefeitura */}
+                <div className="flex justify-start">
+                    <img src="/logo-completo.png" alt="Prefeitura" className="h-16 object-contain" />
                 </div>
-                <div className="w-full bg-slate-900 text-white py-2 rounded-lg mt-2">
+                
+                {/* Texto Central */}
+                <div className="text-center">
+                    <h1 className="text-xl font-black text-slate-900 uppercase">Prefeitura Municipal de Iguatama</h1>
+                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Estado de Minas Gerais</p>
+                </div>
+
+                {/* Logo Polícia Civil (Condicional) */}
+                <div className="flex justify-end">
+                    {(filtros.setor.includes("PC") || filtros.setor.includes("POLICIA") || true) && (
+                        <img src="/logo-pc.png" alt="Polícia Civil" className="h-16 object-contain" />
+                    )}
+                </div>
+            </div>
+
+            <div className="hidden print:flex flex-col items-center mb-6">
+                <div className="w-full bg-slate-900 text-white py-2 rounded-lg text-center">
                     <h2 className="text-lg font-black uppercase tracking-widest">
                         Relatório: {abaAtiva === 'consumo' ? 'Materiais de Consumo' : abaAtiva === 'ti' ? 'Inventário de TI' : 'Gestão de Patrimônio e Ferramentas'}
                     </h2>
@@ -204,22 +214,34 @@ export default function SystemReports({ usuarioLogado }) {
                             <thead>
                                 <tr className="bg-slate-100 print:bg-slate-200 border-b-2 border-slate-300 text-[10px] font-black text-slate-700 uppercase tracking-widest">
                                     <th className="px-6 py-4 border-r border-slate-300">Data</th>
-                                    <th className="px-6 py-4 border-r border-slate-300">Departamento Destino</th>
-                                    <th className="px-6 py-4 border-r border-slate-300">Mês Ref.</th>
-                                    <th className="px-6 py-4 border-r border-slate-300">Responsável</th>
-                                    <th className="px-6 py-4 text-right">Valor Total</th>
+                                    <th className="px-6 py-4 border-r border-slate-300">Item / Descrição</th>
+                                    <th className="px-6 py-4 text-center border-r border-slate-300">Qtd.</th>
+                                    <th className="px-6 py-4 text-right border-r border-slate-300">V. Unitário</th>
+                                    <th className="px-6 py-4 text-right">Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
-                                {dadosConsumo.registros.map(reg => (
-                                    <tr key={reg.id} className="text-[11px] font-medium print:break-inside-avoid">
-                                        <td className="px-6 py-3 border-r border-slate-200 font-mono">{new Date(reg.dataRegistro).toLocaleDateString('pt-BR')}</td>
-                                        <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{reg.departamentoDestino}</td>
-                                        <td className="px-6 py-3 border-r border-slate-200 font-bold">{reg.mesReferencia}</td>
-                                        <td className="px-6 py-3 border-r border-slate-200 uppercase">{reg.usuario.nome}</td>
-                                        <td className="px-6 py-3 text-right font-black">{reg.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                    </tr>
-                                ))}
+                                {dadosConsumo.registros.flatMap(reg => 
+                                    reg.itens.map(item => (
+                                        <tr key={item.id} className="text-[11px] font-medium print:break-inside-avoid">
+                                            <td className="px-6 py-3 border-r border-slate-200 font-mono whitespace-nowrap">
+                                                {new Date(reg.dataRegistro).toLocaleDateString('pt-BR')}
+                                            </td>
+                                            <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">
+                                                {item.nome}
+                                            </td>
+                                            <td className="px-6 py-3 text-center border-r border-slate-200 font-bold">
+                                                {item.quantidade}
+                                            </td>
+                                            <td className="px-6 py-3 text-right border-r border-slate-200 font-bold text-slate-600">
+                                                {(item.precoUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            </td>
+                                            <td className="px-6 py-3 text-right font-black">
+                                                {(item.subtotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                             <tfoot className="bg-slate-900 text-white font-black text-sm uppercase">
                                 <tr>
