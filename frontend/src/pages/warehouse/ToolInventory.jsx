@@ -25,7 +25,7 @@ import {
 import api from "../../api/api";
 import Modal from "../../components/Modal";
 
-export default function Ferramentas() {
+export default function ToolInventory() {
   // ================= ESTADOS DO SISTEMA =================
   const [abaAtiva, setAbaAtiva] = useState("estoque"); // Pode ser 'estoque' ou 'emprestimos'
 

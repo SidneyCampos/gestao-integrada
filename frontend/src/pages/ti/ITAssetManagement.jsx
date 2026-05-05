@@ -23,7 +23,7 @@ import {
 import api from "../../api/api";
 import Modal from "../../components/Modal";
 
-export default function Informatica() {
+export default function ITAssetManagement() {
   const [itens, setItens] = useState([]);
   const [setores, setSetores] = useState([]);
   const [usuarios, setUsuarios] = useState([]);

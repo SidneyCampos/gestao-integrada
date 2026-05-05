@@ -8,7 +8,7 @@
 import { Wrench, Shield, Droplets } from "lucide-react";
 import ModuleDashboard from "../../components/ModuleDashboard";
 
-export default function AlmoxarifadoDashboard() {
+export default function WarehouseDashboard() {
   const miniApps = [
     {
       titulo: "Controle de Ferramentas",

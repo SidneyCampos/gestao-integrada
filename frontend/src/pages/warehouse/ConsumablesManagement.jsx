@@ -29,7 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
 import Modal from '../../components/Modal';
 
-export default function Consumo({ usuarioLogado }) {
+export default function ConsumablesManagement({ usuarioLogado }) {
     const navigate = useNavigate();
     
     // Estados da Lista

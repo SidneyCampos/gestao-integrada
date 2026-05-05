@@ -9,10 +9,10 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path'); // Ferramenta nativa do Node para ler pastas
 
-const rotasAlmoxarifado = require('./modules/almoxarifado/rotas');
+const rotasAlmoxarifado = require('./modules/warehouse/warehouseRoutes');
 const rotasAuth = require('./modules/auth/authRoutes');
 const rotasUsers = require('./modules/users/userRoutes');
-const rotasRelatorios = require('./modules/relatorios/rotas');
+const rotasRelatorios = require('./modules/reports/reportRoutes');
 const authMiddleware = require('./shared/middlewares/authMiddleware');
 
 const app = express();

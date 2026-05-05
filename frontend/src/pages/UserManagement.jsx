@@ -23,7 +23,7 @@ import {
 import api from "../api/api";
 import Modal from "../components/Modal";
 
-export default function Usuarios() {
+export default function UserManagement() {
   const [usuarios, setUsuarios] = useState([]);
   const [setores, setSetores] = useState([]);
   const [carregando, setCarregando] = useState(true);

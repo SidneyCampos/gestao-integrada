@@ -1,13 +1,13 @@
 /**
- * @file ConsumoController.js
+ * @file ConsumableMaterialController.js
  * @description Controlador para o módulo de Materiais de Consumo.
  * Permite o lançamento ágil de requisições com itens de texto livre.
- * @module Almoxarifado/ConsumoController
+ * @module Warehouse/ConsumableMaterialController
  */
 
 const prisma = require('../../shared/database/prisma');
 
-class ConsumoController {
+class ConsumableMaterialController {
     /**
      * Salva uma nova requisição de consumo e seus itens vinculados.
      * Calcula o valor total e utiliza transação para garantir integridade.
@@ -169,4 +169,4 @@ class ConsumoController {
     }
 }
 
-module.exports = ConsumoController;
+module.exports = ConsumableMaterialController;

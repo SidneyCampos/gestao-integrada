@@ -11,13 +11,13 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Usuarios from "./pages/Usuarios";
-import AlmoxarifadoDashboard from "./pages/almoxarifado/AlmoxarifadoDashboard";
-import Ferramentas from "./pages/almoxarifado/Ferramentas";
-import Consumo from "./pages/almoxarifado/Consumo";
-import Relatorios from "./pages/Relatorios";
+import UserManagement from "./pages/UserManagement";
+import WarehouseDashboard from "./pages/warehouse/WarehouseDashboard";
+import ToolInventory from "./pages/warehouse/ToolInventory";
+import ConsumablesManagement from "./pages/warehouse/ConsumablesManagement";
+import SystemReports from "./pages/SystemReports";
 import TIDashboard from "./pages/ti/TIDashboard";
-import Informatica from "./pages/ti/Informatica";
+import ITAssetManagement from "./pages/ti/ITAssetManagement";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import api, { setAuthToken } from "./api/api";
 
@@ -107,7 +107,7 @@ export default function App() {
             path="almoxarifado"
             element={
               <ProtectedRoute usuario={usuarioLogado} setorExigido="Almoxarifado">
-                <AlmoxarifadoDashboard />
+                <WarehouseDashboard />
               </ProtectedRoute>
             }
           />
@@ -116,7 +116,7 @@ export default function App() {
             path="almoxarifado/ferramentas"
             element={
               <ProtectedRoute usuario={usuarioLogado} setorExigido="Almoxarifado">
-                <Ferramentas />
+                <ToolInventory />
               </ProtectedRoute>
             }
           />
@@ -125,14 +125,14 @@ export default function App() {
             path="almoxarifado/consumo"
             element={
               <ProtectedRoute usuario={usuarioLogado} setorExigido="Almoxarifado">
-                <Consumo usuarioLogado={usuarioLogado} />
+                <ConsumablesManagement usuarioLogado={usuarioLogado} />
               </ProtectedRoute>
             }
           />
 
           <Route
             path="relatorios"
-            element={<Relatorios usuarioLogado={usuarioLogado} />}
+            element={<SystemReports usuarioLogado={usuarioLogado} />}
           />
 
           <Route
@@ -148,7 +148,7 @@ export default function App() {
             path="ti/informatica"
             element={
               <ProtectedRoute usuario={usuarioLogado} setorExigido="TI">
-                <Informatica />
+                <ITAssetManagement />
               </ProtectedRoute>
             }
           />
@@ -157,7 +157,7 @@ export default function App() {
             path="usuarios"
             element={
               <ProtectedRoute usuario={usuarioLogado} setorExigido="ADMIN_ONLY">
-                <Usuarios />
+                <UserManagement />
               </ProtectedRoute>
             }
           />

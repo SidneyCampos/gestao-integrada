@@ -82,6 +82,33 @@ async function main() {
     },
   });
 
+  // Novos usuários do fixSectors.js
+  await prisma.usuario.upsert({
+    where: { login: 'joao.silva' },
+    update: { setores: { connect: { id: setorAlmoxarifado.id } } },
+    create: {
+      nome: 'João Silva',
+      login: 'joao.silva',
+      senha: 'mudar123',
+      isAdmin: false,
+      isSistema: true,
+      setores: { connect: { id: setorAlmoxarifado.id } }
+    },
+  });
+
+  await prisma.usuario.upsert({
+    where: { login: 'maria.adm' },
+    update: { setores: { connect: { id: setorAlmoxarifado.id } } },
+    create: {
+      nome: 'Maria Administradora',
+      login: 'maria.adm',
+      senha: 'mudar123',
+      isAdmin: true,
+      isSistema: true,
+      setores: { connect: { id: setorAlmoxarifado.id } }
+    },
+  });
+
   console.log('Usuários criados.');
 
   // 3. Criar Equipamentos de TI (Almoxarifado TI)

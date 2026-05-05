@@ -1,14 +1,14 @@
 /**
- * @file FerramentaController.js
+ * @file ToolInventoryController.js
  * @description Controlador responsável pelo inventário de ferramentas no módulo de almoxarifado.
  * Permite a criação de novos itens no sistema e a listagem de todos os itens cadastrados.
- * @module Almoxarifado/FerramentaController
+ * @module Warehouse/ToolInventoryController
  */
 
 // Importamos nossa conexão com o banco de dados
 const prisma = require('../../shared/database/prisma');
 
-class FerramentaController {
+class ToolInventoryController {
 
     // ========================================================
     // MÉTODO: CRIAR FERRAMENTA
@@ -120,7 +120,7 @@ class FerramentaController {
                 return res.status(400).json({ erro: "O estoque não pode ficar negativo." });
             }
 
-            // Realizamos a operação em transação para garantir o histórico
+            // Realizamos a operação em transação para garantir the histórico
             const [itemAtualizado] = await prisma.$transaction([
                 // 1. Atualiza o item
                 prisma.ferramenta.update({
@@ -186,4 +186,4 @@ class FerramentaController {
     }
 }
 
-module.exports = FerramentaController;
+module.exports = ToolInventoryController;

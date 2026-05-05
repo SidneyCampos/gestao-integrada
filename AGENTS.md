@@ -25,7 +25,7 @@
 - **Permissions**: `hasPermission(usuario, setorExigido)` checks admin or sector membership; routes use `RotaProtegida`
 - **Styling**: Tailwind CSS v4 with utility classes; responsive design (`md:`, `lg:` breakpoints); Lucide React icons
 - **Error Handling**: Frontend shows alerts on API errors; backend returns `{ erro: "message" }` with appropriate status codes
-- **File Naming**: PascalCase for components (e.g., `Ferramentas.jsx`), camelCase for utilities (e.g., `auth.js`)
+- **File Naming**: All file and folder names MUST be in English. Use PascalCase for React components (e.g., `ToolInventory.jsx`), and camelCase for logic/backend files and utilities (e.g., `toolInventoryController.js`, `auth.js`). Backend routing files should follow the `[moduleName]Routes.js` pattern.
 
 ## Design & UX Rules (Non-Negotiable)
 1. **Mobile-First**: Design must be planned for small screens first, then scale up
@@ -44,7 +44,7 @@
 - **prisma/schema.prisma**: Database models with relations (many-to-many Usuario-Setor)
 - **authMiddleware.js**: JWT verification; attaches `req.usuario`
 - **sectorMiddleware.js**: Checks sector access; admins bypass
-- **Ferramentas.jsx**: Example page with tabs, responsive table/cards, modals for CRUD
+- **ToolInventory.jsx**: Example page with tabs, responsive table/cards, modals for CRUD
 - **Modal.jsx**: Reusable modal component with variants (blue, etc.)
 
 ## Integration Points

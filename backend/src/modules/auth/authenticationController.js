@@ -1,15 +1,15 @@
 /**
- * @file AuthController.js
+ * @file AuthenticationController.js
  * @description Controlador responsável pela lógica de autenticação do sistema.
  * Gerencia a validação de credenciais de usuários (Login) e garante 
  * os requisitos iniciais de segurança antes da emissão da sessão.
- * @module Core/AuthController
+ * @module Core/AuthenticationController
  */
 
 const prisma = require('../../shared/database/prisma');
 const jwt = require('jsonwebtoken');
 
-class AuthController {
+class AuthenticationController {
     /**
      * Valida as credenciais fornecidas e retorna os dados de sessão do usuário.
      * @param {Object} req - Objeto de requisição do Express. Deve conter `login` e `senha` no body.
@@ -57,4 +57,4 @@ class AuthController {
     }
 }
 
-module.exports = AuthController;
+module.exports = AuthenticationController;

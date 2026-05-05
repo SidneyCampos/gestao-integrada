@@ -22,7 +22,7 @@ import {
 import api from '../api/api';
 import { hasPermission } from '../utils/auth';
 
-export default function Relatorios({ usuarioLogado }) {
+export default function SystemReports({ usuarioLogado }) {
     const [abaAtiva, setAbaAtiva] = useState("consumo");
     const [carregando, setCarregando] = useState(false);
     const [dadosConsumo, setDadosConsumo] = useState(null);

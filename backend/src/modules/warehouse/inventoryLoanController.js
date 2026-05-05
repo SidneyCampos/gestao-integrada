@@ -1,14 +1,14 @@
 /**
- * @file EmprestimoController.js
+ * @file InventoryLoanController.js
  * @description Controlador para a gestão de empréstimos de ferramentas.
  * Trata lógicas complexas de transação envolvendo tanto a tabela de Empréstimos 
  * quanto o controle de estoque na tabela de Ferramentas (dedução e incremento).
- * @module Almoxarifado/EmprestimoController
+ * @module Warehouse/InventoryLoanController
  */
 
 const prisma = require('../../shared/database/prisma');
 
-class EmprestimoController {
+class InventoryLoanController {
 
     // ========================================================
     // MÉTODO: LISTAR EMPRÉSTIMOS (ATIVOS E HISTÓRICO)
@@ -121,4 +121,4 @@ class EmprestimoController {
     }
 }
 
-module.exports = EmprestimoController;
+module.exports = InventoryLoanController;

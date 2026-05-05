@@ -1,12 +1,12 @@
 /**
- * @file RelatorioController.js
- * @description Controlador para geração de dados consolidados para relatórios.
- * @module Relatorios/RelatorioController
+ * @file SystemReportController.js
+ * @description Controlador para geração de dados consolidados para relatórios do sistema.
+ * @module Reports/SystemReportController
  */
 
 const prisma = require('../../shared/database/prisma');
 
-class RelatorioController {
+class SystemReportController {
     /**
      * Gera relatório de consumo consolidado por período e setor.
      */
@@ -156,4 +156,4 @@ class RelatorioController {
     }
 }
 
-module.exports = RelatorioController;
+module.exports = SystemReportController;

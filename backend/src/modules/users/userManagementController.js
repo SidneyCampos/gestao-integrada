@@ -1,13 +1,13 @@
 /**
- * @file UsuarioController.js
+ * @file UserManagementController.js
  * @description Controlador responsável pela gestão de usuários no sistema.
  * Trata as requisições de listagem de funcionários e alteração de senhas.
- * @module Core/UsuarioController
+ * @module Core/UserManagementController
  */
 
 const prisma = require('../../shared/database/prisma');
 
-class UsuarioController {
+class UserManagementController {
     /**
      * Busca todos os usuários cadastrados e os setores aos quais têm acesso.
      * Retorna a lista em ordem alfabética pelo nome.
@@ -158,4 +158,4 @@ class UsuarioController {
     }
 }
 
-module.exports = UsuarioController;
+module.exports = UserManagementController;

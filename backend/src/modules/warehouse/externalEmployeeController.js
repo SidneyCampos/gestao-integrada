@@ -1,13 +1,13 @@
 /**
- * @file FuncionarioController.js
+ * @file ExternalEmployeeController.js
  * @description Gerencia o cadastro de funcionários externos que não possuem acesso ao sistema,
  * mas que interagem com o almoxarifado (recebem ferramentas).
- * @module Almoxarifado/FuncionarioController
+ * @module Warehouse/ExternalEmployeeController
  */
 
 const prisma = require('../../shared/database/prisma');
 
-class FuncionarioController {
+class ExternalEmployeeController {
     /**
      * Lista todos os usuários que são "Externos" (isSistema: false).
      */
@@ -79,4 +79,4 @@ class FuncionarioController {
     }
 }
 
-module.exports = FuncionarioController;
+module.exports = ExternalEmployeeController;

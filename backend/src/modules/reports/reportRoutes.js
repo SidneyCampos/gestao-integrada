@@ -6,12 +6,12 @@
 
 const express = require('express');
 const router = express.Router();
-const RelatorioController = require('./RelatorioController');
+const systemReportController = require('./systemReportController');
 const sectorMiddleware = require('../../shared/middlewares/sectorMiddleware');
 
 // Relatórios consolidados
-router.get('/consumo', RelatorioController.consumo);
-router.get('/ferramentas', RelatorioController.ferramentas);
-router.get('/ti', sectorMiddleware('TI'), RelatorioController.ti);
+router.get('/consumo', systemReportController.consumo);
+router.get('/ferramentas', systemReportController.ferramentas);
+router.get('/ti', sectorMiddleware('TI'), systemReportController.ti);
 
 module.exports = router;
