@@ -15,6 +15,13 @@ class ExternalEmployeeController {
         try {
             const funcionarios = await prisma.usuario.findMany({
                 where: { isSistema: false },
+                select: {
+                    id: true,
+                    nome: true,
+                    telefone: true,
+                    setorExterno: true,
+                    isSistema: true
+                },
                 orderBy: { nome: 'asc' }
             });
             return res.status(200).json(funcionarios);
@@ -29,7 +36,7 @@ class ExternalEmployeeController {
      */
     static async criar(req, res) {
         try {
-            const { nome, telefone } = req.body;
+            const { nome, telefone, setorExterno } = req.body;
 
             if (!nome) {
                 return res.status(400).json({ erro: "O nome do funcionário é obrigatório." });
@@ -39,6 +46,7 @@ class ExternalEmployeeController {
                 data: {
                     nome,
                     telefone,
+                    setorExterno,
                     isSistema: false, // Define que este usuário não acessa o sistema
                     isAdmin: false
                 }
@@ -48,6 +56,30 @@ class ExternalEmployeeController {
         } catch (erro) {
             console.error("[ALMOX_FUNC_CREATE_ERROR]", erro);
             return res.status(500).json({ erro: "Erro ao cadastrar funcionário externo." });
+        }
+    }
+
+    /**
+     * Atualiza os dados de um funcionário externo.
+     */
+    static async atualizar(req, res) {
+        try {
+            const id = parseInt(req.params.id);
+            const { nome, telefone, setorExterno } = req.body;
+
+            if (!nome) {
+                return res.status(400).json({ erro: "O nome é obrigatório." });
+            }
+
+            const funcionarioAtualizado = await prisma.usuario.update({
+                where: { id },
+                data: { nome, telefone, setorExterno }
+            });
+
+            return res.status(200).json(funcionarioAtualizado);
+        } catch (erro) {
+            console.error("[ALMOX_FUNC_UPDATE_ERROR]", erro);
+            return res.status(500).json({ erro: "Erro ao atualizar funcionário externo." });
         }
     }
 

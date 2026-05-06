@@ -33,6 +33,7 @@ router.patch('/emprestimos/:id/devolver', inventoryLoanController.devolver);
 // --- Rotas de Funcionários Externos ---
 router.get('/funcionarios', externalEmployeeController.listar);
 router.post('/funcionarios', externalEmployeeController.criar);
+router.put('/funcionarios/:id', externalEmployeeController.atualizar);
 router.delete('/funcionarios/:id', externalEmployeeController.deletar);
 
 // --- Rotas de Materiais de Consumo ---

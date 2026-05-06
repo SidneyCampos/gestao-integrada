@@ -5,14 +5,14 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    PieChart, 
-    Calendar, 
-    Building2, 
-    Printer, 
-    TrendingUp, 
-    FileText, 
-    Package, 
+import {
+    PieChart,
+    Calendar,
+    Building2,
+    Printer,
+    TrendingUp,
+    FileText,
+    Package,
     ShoppingBag,
     Filter,
     History,
@@ -72,38 +72,38 @@ export default function SystemReports({ usuarioLogado }) {
 
     return (
         <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
-            
-            {/* ================= CABEÇALHO OFICIAL (APARECE APENAS NO PDF/PRINT) ================= */}
-            <div className="hidden print:grid grid-cols-3 items-center mb-10 border-b-2 border-slate-900 pb-6 w-full">
-                {/* Logo Prefeitura */}
-                <div className="flex justify-start">
-                    <img src="/logo-completo.png" alt="Prefeitura" className="h-16 object-contain" />
-                </div>
-                
-                {/* Texto Central */}
-                <div className="text-center">
-                    <h1 className="text-xl font-black text-slate-900 uppercase">Prefeitura Municipal de Iguatama</h1>
-                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Estado de Minas Gerais</p>
-                </div>
 
-                {/* Logo Polícia Civil (Condicional) */}
-                <div className="flex justify-end">
-                    {(filtros.setor.includes("PC") || filtros.setor.includes("POLICIA") || true) && (
-                        <img src="/logo-pc.png" alt="Polícia Civil" className="h-16 object-contain" />
+            {/* ================= CABEÇALHO OFICIAL (APARECE APENAS NO PDF/PRINT) ================= */}
+            <div className="hidden print:flex flex-col items-center text-center mb-10 border-b border-black pb-6">
+                <div className="flex items-center gap-4 mb-4">
+                    {/* Logo da Prefeitura dentro do círculo */}
+                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center border border-black flex-shrink-0">
+                        <img src="/logo-completo.png" alt="Logo" className="w-20 h-20 object-contain" />
+                    </div>
+                    <div className="text-left">
+                        <h1 className="text-2xl font-black text-black uppercase">Prefeitura Municipal de Iguatama</h1>
+                        <p className="text-sm font-bold text-black uppercase tracking-widest">Estado de Minas Gerais</p>
+                    </div>
+                    {/* Logo Polícia Civil (Condicional) */}
+                    {(filtros.setor.toUpperCase().includes("POLICIA CIVIL") || filtros.setor.toUpperCase().includes("PC")) && (
+                        <img src="/logo-pc.png" alt="Polícia Civil" className="h-20 object-contain ml-8" />
+                    )}
+                    {/* Logo Polícia Militar (Condicional) */}
+                    {(filtros.setor.toUpperCase().includes("POLICIA MILITAR") || filtros.setor.toUpperCase().includes("PM")) && (
+                        <img src="/logo-pm.png" alt="Polícia Militar" className="h-20 object-contain ml-8" />
                     )}
                 </div>
-            </div>
-
-            <div className="hidden print:flex flex-col items-center mb-6">
-                <div className="w-full bg-slate-900 text-white py-2 rounded-lg text-center">
-                    <h2 className="text-lg font-black uppercase tracking-widest">
+                <div className="w-full mt-4">
+                    <hr className="border-black" />
+                    <h2 className="text-center text-lg font-black uppercase tracking-widest py-3 text-black">
                         Relatório: {abaAtiva === 'consumo' ? 'Materiais de Consumo' : abaAtiva === 'ti' ? 'Inventário de TI' : 'Gestão de Patrimônio e Ferramentas'}
                     </h2>
+                    <hr className="border-black" />
                 </div>
-                <div className="mt-4 flex justify-between w-full text-[10px] font-bold text-slate-500 uppercase">
-                    <span>Período: {new Date(filtros.dataInicio).toLocaleDateString()} até {new Date(filtros.dataFim).toLocaleDateString()}</span>
+                <div className="mt-4 flex justify-between w-full text-[10px] font-bold text-black uppercase">
+                    <span>Período: {new Date(filtros.dataInicio).toLocaleDateString('pt-BR')} até {new Date(filtros.dataFim).toLocaleDateString('pt-BR')}</span>
                     <span>Emitido por: {usuarioLogado?.nome}</span>
-                    <span>Extraído em: {new Date().toLocaleString()}</span>
+                    <span>Extraído em: {new Date().toLocaleString('pt-BR')}</span>
                 </div>
             </div>
 
@@ -126,16 +126,16 @@ export default function SystemReports({ usuarioLogado }) {
             <div className="print:hidden">
                 <div className="flex flex-wrap md:flex-nowrap bg-slate-200/50 p-1 rounded-xl w-full max-w-3xl mb-8 gap-1">
                     <button onClick={() => setAbaAtiva("consumo")} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] sm:text-sm font-bold rounded-lg transition-all ${abaAtiva === "consumo" ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"}`}>
-                        <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+                        <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <span className="hidden sm:inline">Materiais de </span>Consumo
                     </button>
                     <button onClick={() => setAbaAtiva("ferramentas")} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] sm:text-sm font-bold rounded-lg transition-all ${abaAtiva === "ferramentas" ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"}`}>
-                        <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+                        <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <span className="hidden sm:inline">Ferramentas / </span>Patrimônio
                     </button>
                     {hasPermission(usuarioLogado, "TI") && (
                         <button onClick={() => setAbaAtiva("ti")} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] sm:text-sm font-bold rounded-lg transition-all ${abaAtiva === "ti" ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"}`}>
-                            <Cpu className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+                            <Cpu className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             TI
                         </button>
                     )}
@@ -145,16 +145,16 @@ export default function SystemReports({ usuarioLogado }) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Data Inicial</label>
-                            <input type="date" value={filtros.dataInicio} onChange={(e) => setFiltros({...filtros, dataInicio: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                            <input type="date" value={filtros.dataInicio} onChange={(e) => setFiltros({ ...filtros, dataInicio: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Data Final</label>
-                            <input type="date" value={filtros.dataFim} onChange={(e) => setFiltros({...filtros, dataFim: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                            <input type="date" value={filtros.dataFim} onChange={(e) => setFiltros({ ...filtros, dataFim: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
                         </div>
                         {abaAtiva === "consumo" && (
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Setor</label>
-                                <select value={filtros.setor} onChange={(e) => setFiltros({...filtros, setor: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                                <select value={filtros.setor} onChange={(e) => setFiltros({ ...filtros, setor: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
                                     <option value="">Todos</option>
                                     {setores.map(s => <option key={s.id} value={s.nome}>{s.nome}</option>)}
                                 </select>
@@ -210,43 +210,51 @@ export default function SystemReports({ usuarioLogado }) {
                     <div className="p-20 text-center text-slate-400 animate-pulse font-black uppercase text-xs tracking-widest print:hidden">Gerando Documento...</div>
                 ) : abaAtiva === "consumo" && dadosConsumo ? (
                     <div className="print:block">
-                        <table className="w-full text-left border-collapse border border-slate-300">
+                        <table className="w-full text-left border-collapse border border-black">
                             <thead>
-                                <tr className="bg-slate-100 print:bg-slate-200 border-b-2 border-slate-300 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                                    <th className="px-6 py-4 border-r border-slate-300">Data</th>
-                                    <th className="px-6 py-4 border-r border-slate-300">Item / Descrição</th>
-                                    <th className="px-6 py-4 text-center border-r border-slate-300">Qtd.</th>
-                                    <th className="px-6 py-4 text-right border-r border-slate-300">V. Unitário</th>
-                                    <th className="px-6 py-4 text-right">Subtotal</th>
+                                <tr className="border-b border-black text-[10px] font-bold text-black uppercase tracking-widest">
+                                    <th className="px-3 py-3 border border-black text-black">Data</th>
+                                    <th className="px-3 py-3 border border-black text-black">Departamento Destino</th>
+                                    <th className="px-3 py-3 border border-black text-black">Mês Ref.</th>
+                                    <th className="px-3 py-3 border border-black text-black">Descrição do Produto</th>
+                                    <th className="px-3 py-3 border border-black text-black text-center">Qtd.</th>
+                                    <th className="px-3 py-3 border border-black text-black text-right">Valor Unitário</th>
+                                    <th className="px-3 py-3 border border-black text-black text-right">Subtotal</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200">
-                                {dadosConsumo.registros.flatMap(reg => 
+                            <tbody>
+                                {dadosConsumo.registros.flatMap(reg =>
                                     reg.itens.map(item => (
-                                        <tr key={item.id} className="text-[11px] font-medium print:break-inside-avoid">
-                                            <td className="px-6 py-3 border-r border-slate-200 font-mono whitespace-nowrap">
+                                        <tr key={item.id} className="text-[10px] print:break-inside-avoid">
+                                            <td className="px-3 py-2 border border-black text-black font-mono whitespace-nowrap">
                                                 {new Date(reg.dataRegistro).toLocaleDateString('pt-BR')}
                                             </td>
-                                            <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">
-                                                {item.nome}
+                                            <td className="px-3 py-2 border border-black text-black font-bold uppercase">
+                                                {reg.departamentoDestino}
                                             </td>
-                                            <td className="px-6 py-3 text-center border-r border-slate-200 font-bold">
+                                            <td className="px-3 py-2 border border-black text-black">
+                                                {reg.mesReferencia}
+                                            </td>
+                                            <td className="px-3 py-2 border border-black text-black uppercase">
+                                                {item.descricaoProduto}
+                                            </td>
+                                            <td className="px-3 py-2 border border-black text-black text-center">
                                                 {item.quantidade}
                                             </td>
-                                            <td className="px-6 py-3 text-right border-r border-slate-200 font-bold text-slate-600">
-                                                {(item.precoUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            <td className="px-3 py-2 border border-black text-black text-right">
+                                                {(item.valorUnitario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                             </td>
-                                            <td className="px-6 py-3 text-right font-black">
+                                            <td className="px-3 py-2 border border-black text-black text-right font-bold">
                                                 {(item.subtotal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                             </td>
                                         </tr>
                                     ))
                                 )}
                             </tbody>
-                            <tfoot className="bg-slate-900 text-white font-black text-sm uppercase">
+                            <tfoot className="border-t border-black font-black text-sm uppercase">
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-4 text-right border-r border-slate-700">Total Consolidado:</td>
-                                    <td className="px-6 py-4 text-right">{dadosConsumo.resumo.totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                    <td colSpan="6" className="px-3 py-3 text-right border border-black text-black uppercase">Total Consolidado:</td>
+                                    <td className="px-3 py-3 text-right border border-black text-black">{(dadosConsumo.resumo?.totalGeral || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -255,23 +263,23 @@ export default function SystemReports({ usuarioLogado }) {
                     <div className="space-y-10">
                         {/* Tabela de Inventário */}
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black uppercase border-l-4 border-slate-900 pl-3">Inventário de Patrimônio</h3>
-                            <table className="w-full text-left border-collapse border border-slate-300">
-                                <thead className="bg-slate-100 border-b-2 border-slate-300 text-[10px] font-black uppercase">
+                            <h3 className="text-xs font-black uppercase border-l-4 border-black pl-3 text-black">Inventário de Patrimônio</h3>
+                            <table className="w-full text-left border-collapse border border-black">
+                                <thead className="border-b border-black text-[10px] font-bold text-black uppercase">
                                     <tr>
-                                        <th className="px-6 py-4 border-r border-slate-300">Ferramenta / Descrição</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Patrimônio</th>
-                                        <th className="px-6 py-4 text-center border-r border-slate-300">Total</th>
-                                        <th className="px-6 py-4 text-center">Disponível</th>
+                                        <th className="px-6 py-4 border border-black text-black">Ferramenta / Descrição</th>
+                                        <th className="px-6 py-4 border border-black text-black">Patrimônio</th>
+                                        <th className="px-6 py-4 text-center border border-black text-black">Total</th>
+                                        <th className="px-6 py-4 text-center border border-black text-black">Disponível</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {dadosFerramentas.inventario.map(inv => (
-                                        <tr key={inv.id} className="text-[11px] font-medium border-b border-slate-200">
-                                            <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{inv.nome}</td>
-                                            <td className="px-6 py-3 border-r border-slate-200 font-mono">{inv.codigoPatrimonio || "S/N"}</td>
-                                            <td className="px-6 py-3 text-center border-r border-slate-200 font-bold">{inv.quantidadeTotal}</td>
-                                            <td className="px-6 py-3 text-center font-black text-blue-600">{inv.qtdDisponivel}</td>
+                                        <tr key={inv.id} className="text-[11px] font-medium print:break-inside-avoid">
+                                            <td className="px-6 py-3 border border-black text-black font-black uppercase">{inv.nome}</td>
+                                            <td className="px-6 py-3 border border-black text-black font-mono">{inv.codigoPatrimonio || "S/N"}</td>
+                                            <td className="px-6 py-3 text-center border border-black text-black font-bold">{inv.quantidadeTotal}</td>
+                                            <td className="px-6 py-3 text-center border border-black text-black font-black">{inv.qtdDisponivel}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -280,23 +288,23 @@ export default function SystemReports({ usuarioLogado }) {
 
                         {/* Tabela de Empréstimos Ativos */}
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black uppercase border-l-4 border-blue-600 pl-3">Empréstimos em Campo (Pendentes)</h3>
-                            <table className="w-full text-left border-collapse border border-slate-300">
-                                <thead className="bg-slate-100 border-b-2 border-slate-300 text-[10px] font-black uppercase">
+                            <h3 className="text-xs font-black uppercase border-l-4 border-black pl-3 text-black">Empréstimos em Campo (Pendentes)</h3>
+                            <table className="w-full text-left border-collapse border border-black">
+                                <thead className="border-b border-black text-[10px] font-bold text-black uppercase">
                                     <tr>
-                                        <th className="px-6 py-4 border-r border-slate-300">Funcionário</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Material Retirado</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Data de Saída</th>
-                                        <th className="px-6 py-4 text-center">Status</th>
+                                        <th className="px-6 py-4 border border-black text-black">Funcionário</th>
+                                        <th className="px-6 py-4 border border-black text-black">Material Retirado</th>
+                                        <th className="px-6 py-4 border border-black text-black">Data de Saída</th>
+                                        <th className="px-6 py-4 text-center border border-black text-black">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {dadosFerramentas.emprestimosAtivos.map(emp => (
-                                        <tr key={emp.id} className="text-[11px] font-medium border-b border-slate-200">
-                                            <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{emp.usuario.nome}</td>
-                                            <td className="px-6 py-3 border-r border-slate-200 font-bold">{emp.ferramenta.nome}</td>
-                                            <td className="px-6 py-3 border-r border-slate-200 font-mono">{new Date(emp.dataSaida).toLocaleDateString()}</td>
-                                            <td className="px-6 py-3 text-center uppercase font-black text-amber-600">Pendente</td>
+                                        <tr key={emp.id} className="text-[11px] font-medium print:break-inside-avoid">
+                                            <td className="px-6 py-3 border border-black text-black font-black uppercase">{emp.usuario.nome}</td>
+                                            <td className="px-6 py-3 border border-black text-black font-bold">{emp.ferramenta.nome}</td>
+                                            <td className="px-6 py-3 border border-black text-black font-mono">{new Date(emp.dataSaida).toLocaleDateString()}</td>
+                                            <td className="px-6 py-3 text-center border border-black text-black uppercase font-black">Pendente</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -307,23 +315,23 @@ export default function SystemReports({ usuarioLogado }) {
                     <div className="space-y-10">
                         {/* Tabela de Inventário TI */}
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black uppercase border-l-4 border-blue-600 pl-3">Inventário Exclusivo - TI</h3>
-                            <table className="w-full text-left border-collapse border border-slate-300">
-                                <thead className="bg-slate-50 border-b-2 border-slate-300 text-[10px] font-black uppercase">
+                            <h3 className="text-xs font-black uppercase border-l-4 border-black pl-3 text-black">Inventário Exclusivo - TI</h3>
+                            <table className="w-full text-left border-collapse border border-black">
+                                <thead className="border-b border-black text-[10px] font-bold text-black uppercase">
                                     <tr>
-                                        <th className="px-6 py-4 border-r border-slate-300">Item / Hardware</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Patrimônio</th>
-                                        <th className="px-6 py-4 text-center border-r border-slate-300">Total</th>
-                                        <th className="px-6 py-4 text-center">Disponível</th>
+                                        <th className="px-6 py-4 border border-black text-black">Item / Hardware</th>
+                                        <th className="px-6 py-4 border border-black text-black">Patrimônio</th>
+                                        <th className="px-6 py-4 text-center border border-black text-black">Total</th>
+                                        <th className="px-6 py-4 text-center border border-black text-black">Disponível</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {dadosTI.inventario.map(inv => (
-                                        <tr key={inv.id} className="text-[11px] font-medium border-b border-slate-200">
-                                            <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{inv.nome}</td>
-                                            <td className="px-6 py-3 border-r border-slate-200 font-mono">{inv.codigoPatrimonio || "S/N"}</td>
-                                            <td className="px-6 py-3 text-center border-r border-slate-200 font-bold">{inv.quantidadeTotal}</td>
-                                            <td className="px-6 py-3 text-center font-black text-blue-600">{inv.qtdDisponivel}</td>
+                                        <tr key={inv.id} className="text-[11px] font-medium print:break-inside-avoid">
+                                            <td className="px-6 py-3 border border-black text-black font-black uppercase">{inv.nome}</td>
+                                            <td className="px-6 py-3 border border-black text-black font-mono">{inv.codigoPatrimonio || "S/N"}</td>
+                                            <td className="px-6 py-3 text-center border border-black text-black font-bold">{inv.quantidadeTotal}</td>
+                                            <td className="px-6 py-3 text-center border border-black text-black font-black">{inv.qtdDisponivel}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -332,23 +340,23 @@ export default function SystemReports({ usuarioLogado }) {
 
                         {/* Tabela de Empréstimos TI */}
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black uppercase border-l-4 border-slate-900 pl-3">Responsáveis por Equipamentos (TI)</h3>
-                            <table className="w-full text-left border-collapse border border-slate-300">
-                                <thead className="bg-slate-50 border-b-2 border-slate-300 text-[10px] font-black uppercase">
+                            <h3 className="text-xs font-black uppercase border-l-4 border-black pl-3 text-black">Responsáveis por Equipamentos (TI)</h3>
+                            <table className="w-full text-left border-collapse border border-black">
+                                <thead className="border-b border-black text-[10px] font-bold text-black uppercase">
                                     <tr>
-                                        <th className="px-6 py-4 border-r border-slate-300">Servidor</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Equipamento</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Data de Entrega</th>
-                                        <th className="px-6 py-4 text-center">Status</th>
+                                        <th className="px-6 py-4 border border-black text-black">Servidor</th>
+                                        <th className="px-6 py-4 border border-black text-black">Equipamento</th>
+                                        <th className="px-6 py-4 border border-black text-black">Data de Entrega</th>
+                                        <th className="px-6 py-4 text-center border border-black text-black">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {dadosTI.emprestimosAtivos.map(emp => (
-                                        <tr key={emp.id} className="text-[11px] font-medium border-b border-slate-200">
-                                            <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{emp.usuario.nome}</td>
-                                            <td className="px-6 py-3 border-r border-slate-200 font-bold">{emp.ferramenta.nome}</td>
-                                            <td className="px-6 py-3 border-r border-slate-200 font-mono">{new Date(emp.dataSaida).toLocaleDateString()}</td>
-                                            <td className="px-6 py-3 text-center uppercase font-black text-blue-600">Em Uso</td>
+                                        <tr key={emp.id} className="text-[11px] font-medium print:break-inside-avoid">
+                                            <td className="px-6 py-3 border border-black text-black font-black uppercase">{emp.usuario.nome}</td>
+                                            <td className="px-6 py-3 border border-black text-black font-bold">{emp.ferramenta.nome}</td>
+                                            <td className="px-6 py-3 border border-black text-black font-mono">{new Date(emp.dataSaida).toLocaleDateString()}</td>
+                                            <td className="px-6 py-3 text-center border border-black text-black uppercase font-black">Em Uso</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -361,18 +369,12 @@ export default function SystemReports({ usuarioLogado }) {
             </div>
 
             {/* RODAPÉ OFICIAL (APARECE APENAS NO PDF) */}
-            <div className="hidden print:flex flex-col items-center mt-20 pt-10 border-t border-slate-200 gap-12">
-                <div className="flex justify-around w-full">
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="w-48 border-t border-slate-900"></div>
-                        <p className="text-[10px] font-black uppercase">Responsável pelo Almoxarifado</p>
-                    </div>
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="w-48 border-t border-slate-900"></div>
-                        <p className="text-[10px] font-black uppercase">Secretaria de Administração</p>
-                    </div>
+            <div className="hidden print:flex flex-col items-center mt-16 pt-8 border-t border-black gap-6">
+                <div className="flex flex-col items-center gap-2">
+                    <div className="w-56 border-t border-black"></div>
+                    <p className="text-[10px] font-black text-black uppercase">Responsável pelo Almoxarifado</p>
                 </div>
-                <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest text-center">
+                <div className="text-[9px] text-black font-bold uppercase tracking-widest text-center">
                     Documento Gerado Eletronicamente pelo Sistema de Gestão Integrada - Iguatama/MG
                 </div>
             </div>

@@ -26,6 +26,7 @@ model Usuario {
   id       Int     @id @default(autoincrement())
   nome     String
   telefone String?
+  setorExterno String? // Campo de texto livre para funcionários externos
 
   // Agora um usuário pode ter NENHUM, UM ou VÁRIOS setores!
   setores Setor[]

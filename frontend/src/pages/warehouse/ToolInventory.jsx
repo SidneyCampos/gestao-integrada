@@ -150,13 +150,14 @@ export default function ToolInventory() {
     e.preventDefault();
     const nome = e.target.nome.value;
     const telefone = e.target.telefone.value;
+    const setorExterno = e.target.setorExterno.value;
 
     try {
       setSalvando(true);
       if (funcionarioEditando) {
-        await api.put(`/almoxarifado/funcionarios/${funcionarioEditando.id}`, { nome, telefone });
+        await api.put(`/almoxarifado/funcionarios/${funcionarioEditando.id}`, { nome, telefone, setorExterno });
       } else {
-        const res = await api.post("/almoxarifado/funcionarios", { nome, telefone });
+        const res = await api.post("/almoxarifado/funcionarios", { nome, telefone, setorExterno });
         setUsuarioIdSelecionado(res.data.id);
       }
       
@@ -364,6 +365,7 @@ export default function ToolInventory() {
               <thead>
                 <tr className="bg-slate-50 text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">
                   <th className="px-6 py-3">Nome</th>
+                  <th className="px-6 py-3">Setor / Origem</th>
                   <th className="px-6 py-3">Telefone</th>
                   <th className="px-6 py-3 text-right">Ações</th>
                 </tr>
@@ -379,6 +381,7 @@ export default function ToolInventory() {
                   equipeFiltrada.map(f => (
                     <tr key={f.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 font-bold text-slate-700">{f.nome}</td>
+                      <td className="px-6 py-4 text-slate-500 text-sm italic">{f.setorExterno || "Não informado"}</td>
                       <td className="px-6 py-4 text-slate-500 text-sm">{f.telefone || "---"}</td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <button 
@@ -837,6 +840,16 @@ export default function ToolInventory() {
               type="text" 
               required 
               defaultValue={funcionarioEditando?.nome}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Setor / Origem</label>
+            <input 
+              name="setorExterno" 
+              type="text" 
+              placeholder="Ex: Secretaria de Saúde, Empresa X, Manutenção..."
+              defaultValue={funcionarioEditando?.setorExterno}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
             />
           </div>
