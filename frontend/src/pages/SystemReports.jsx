@@ -68,39 +68,71 @@ export default function SystemReports({ usuarioLogado }) {
         }
     };
 
-    const handlePrint = () => window.print();
+    const handlePrint = () => {
+        const dataFormatada = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        const tema = abaAtiva === 'consumo' ? 'Consumo' : abaAtiva === 'ti' ? 'TI' : 'Ferramentas';
+        const setor = filtros.setor ? `_${filtros.setor.replace(/\s+/g, '_')}` : '';
+        const nomeArquivo = `Relatorio_${tema}${setor}_${dataFormatada}`;
+
+        const originalTitle = document.title;
+        document.title = nomeArquivo;
+        window.print();
+        document.title = originalTitle;
+    };
 
     return (
         <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
 
+            <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                    @page { margin: 1cm; size: auto; }
+                    html, body { 
+                        overflow: visible !important; 
+                        height: auto !important; 
+                        margin: 0 !important; 
+                        padding: 0 !important; 
+                        -webkit-print-color-adjust: exact; 
+                        print-color-adjust: exact; 
+                    }
+                    * { color: #000 !important; border-color: #000 !important; }
+                    .bg-slate-900, .bg-black { background-color: transparent !important; color: #000 !important; border: 1px solid #000 !important; }
+                    .text-white { color: #000 !important; }
+                    ::-webkit-scrollbar { display: none !important; }
+                }
+            `}} />
+
             {/* ================= CABEÇALHO OFICIAL (APARECE APENAS NO PDF/PRINT) ================= */}
-            <div className="hidden print:flex flex-col items-center text-center mb-10 border-b border-black pb-6">
-                <div className="flex items-center gap-4 mb-4">
-                    {/* Logo da Prefeitura dentro do círculo */}
-                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center border border-black flex-shrink-0">
-                        <img src="/logo-completo.png" alt="Logo" className="w-20 h-20 object-contain" />
+            <div className="hidden print:flex flex-col items-center text-center mb-6 border-b border-black pb-6">
+                <div className="flex items-center justify-between w-full mb-4">
+                    <div className="flex items-center gap-4">
+                        <img src="/logo-completo.png" alt="Logo Prefeitura" className="w-20 h-20 object-contain" />
+                        <div className="text-left border-l border-black pl-4">
+                            <h1 className="text-2xl font-black text-black uppercase">Prefeitura Municipal de Iguatama</h1>
+                            <p className="text-sm font-bold text-black uppercase tracking-widest">Estado de Minas Gerais</p>
+                        </div>
                     </div>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-black text-black uppercase">Prefeitura Municipal de Iguatama</h1>
-                        <p className="text-sm font-bold text-black uppercase tracking-widest">Estado de Minas Gerais</p>
+                    
+                    {/* Logos Dinâmicos dos Setores */}
+                    <div className="flex items-center">
+                        {(filtros.setor.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().includes("POLICIA CIVIL") || filtros.setor.toUpperCase().includes("PC")) ? (
+                            <img src="/logo-pc.png" alt="Logo PC" className="w-20 h-20 object-contain" />
+                        ) : (filtros.setor.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().includes("POLICIA MILITAR") || filtros.setor.toUpperCase().includes("PM")) ? (
+                            <img src="/logo-pm.png" alt="Logo PM" className="w-20 h-20 object-contain" />
+                        ) : filtros.setor ? (
+                            <div className="text-right">
+                                <span className="text-xl font-black text-black uppercase border-b border-black pb-1">{filtros.setor}</span>
+                            </div>
+                        ) : null}
                     </div>
-                    {/* Logo Polícia Civil (Condicional) */}
-                    {(filtros.setor.toUpperCase().includes("POLICIA CIVIL") || filtros.setor.toUpperCase().includes("PC")) && (
-                        <img src="/logo-pc.png" alt="Polícia Civil" className="h-20 object-contain ml-8" />
-                    )}
-                    {/* Logo Polícia Militar (Condicional) */}
-                    {(filtros.setor.toUpperCase().includes("POLICIA MILITAR") || filtros.setor.toUpperCase().includes("PM")) && (
-                        <img src="/logo-pm.png" alt="Polícia Militar" className="h-20 object-contain ml-8" />
-                    )}
                 </div>
-                <div className="w-full mt-4">
-                    <hr className="border-black" />
-                    <h2 className="text-center text-lg font-black uppercase tracking-widest py-3 text-black">
+
+                <div className="w-full border-y border-black py-2 mb-4 bg-slate-50">
+                    <h2 className="text-lg font-black uppercase tracking-widest">
                         Relatório: {abaAtiva === 'consumo' ? 'Materiais de Consumo' : abaAtiva === 'ti' ? 'Inventário de TI' : 'Gestão de Patrimônio e Ferramentas'}
                     </h2>
-                    <hr className="border-black" />
                 </div>
-                <div className="mt-4 flex justify-between w-full text-[10px] font-bold text-black uppercase">
+
+                <div className="flex justify-between w-full text-[10px] font-bold text-black uppercase">
                     <span>Período: {new Date(filtros.dataInicio).toLocaleDateString('pt-BR')} até {new Date(filtros.dataFim).toLocaleDateString('pt-BR')}</span>
                     <span>Emitido por: {usuarioLogado?.nome}</span>
                     <span>Extraído em: {new Date().toLocaleString('pt-BR')}</span>

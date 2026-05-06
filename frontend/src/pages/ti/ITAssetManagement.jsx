@@ -43,7 +43,7 @@ export default function ITAssetManagement() {
     nome: "",
     codigoPatrimonio: "",
     quantidadeTotal: 1,
-    categoria: "Informática"
+    categoria: "INFORMÁTICA"
   });
 
   const buscarDados = async () => {
@@ -66,7 +66,7 @@ export default function ITAssetManagement() {
 
       // Filtra o histórico para mostrar apenas consumos de itens de TI
       const historicoTI = resEmprestimos.data.filter(e => 
-        e.status === "CONSUMIDO" && e.ferramenta.categoria === "Informática"
+        e.status === "CONSUMIDO" && e.ferramenta.categoria === "INFORMÁTICA"
       );
       setHistorico(historicoTI);
 
@@ -93,7 +93,7 @@ export default function ITAssetManagement() {
       });
       
       setModalCadastroAberto(false);
-      setNovoItem({ nome: "", codigoPatrimonio: "", quantidadeTotal: 1, categoria: "Informática" });
+      setNovoItem({ nome: "", codigoPatrimonio: "", quantidadeTotal: 1, categoria: "INFORMÁTICA" });
       buscarDados();
     } catch (erro) {
       alert("Erro ao cadastrar item.");

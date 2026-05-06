@@ -71,7 +71,7 @@ export default function ToolInventory() {
     try {
       setCarregando(true);
       // Busca ferramentas, usuários e empréstimos!
-      const resFerramentas = await api.get("/almoxarifado/ferramentas?excluirCategoria=Informática");
+      const resFerramentas = await api.get("/almoxarifado/ferramentas?excluirCategoria=INFORMÁTICA");
       const resUsuarios = await api.get("/core/usuarios");
       const resFuncionarios = await api.get("/almoxarifado/funcionarios");
       const resEmprestimos = await api.get("/almoxarifado/emprestimos");
@@ -105,7 +105,7 @@ export default function ToolInventory() {
         nome: novaFerramenta.nome,
         codigoPatrimonio: novaFerramenta.codigoPatrimonio,
         quantidadeTotal: parseInt(novaFerramenta.quantidadeTotal),
-        categoria: "Ferramenta",
+        categoria: "FERRAMENTA",
       });
       setModalCadastroAberto(false);
       setNovaFerramenta({ nome: "", codigoPatrimonio: "", quantidadeTotal: 1 });
