@@ -5,8 +5,10 @@ echo ===================================================
 
 echo.
 echo [1/6] Parando sistema para manutencao...
-:: Paramos o PM2 primeiro para liberar os arquivos (evita erro EPERM)
-call pm2 stop Gestao-Integrada
+:: Paramos o PM2 para liberar arquivos e o banco de dados
+call pm2 stop "Gestao-Integrada"
+echo Aguardando processos finalizarem...
+timeout /t 3 /nobreak > nul
 
 echo.
 echo [2/6] Baixando novidades do GitHub...
@@ -23,7 +25,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo [4/6] Atualizando Banco de Dados...
+echo [4/6] Atualizando Banco de Dados e Prisma...
 call npx prisma generate
 call npx prisma db push
 if %ERRORLEVEL% NEQ 0 (
@@ -47,10 +49,13 @@ cd ..
 
 echo.
 echo [6/6] Reiniciando o sistema no PM2...
+:: Tenta iniciar. Se ja existir, ele apenas inicia; se nao, cria o processo.
 call pm2 start backend/src/server.js --name "Gestao-Integrada"
+call pm2 save
 
 echo.
 echo ===================================================
 echo   ATUALIZACAO CONCLUIDA COM SUCESSO!
+echo   O sistema ja deve estar acessivel.
 echo ===================================================
 pause
