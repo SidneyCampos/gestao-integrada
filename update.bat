@@ -1,18 +1,24 @@
 @echo off
+setlocal
 echo ===================================================
-echo   Atualizacao do Sistema - Prefeitura Hub
+echo   Atualizacao do Sistema (PRODUCAO) - Prefeitura Hub
 echo ===================================================
 
 echo.
 echo [1/6] Parando sistema para manutencao...
-:: Paramos o PM2 para liberar arquivos e o banco de dados
-call pm2 stop "Gestao-Integrada"
+:: Tentamos parar o PM2. O || echo ignora erro se o processo nao existir.
+call pm2 stop "Gestao-Integrada" || echo [INFO] Processo nao estava rodando.
 echo Aguardando processos finalizarem...
-timeout /t 3 /nobreak > nul
+timeout /t 2 /nobreak > nul
 
 echo.
-echo [2/6] Baixando novidades do GitHub...
+echo [2/6] Baixando novidades do GitHub (Branch: antigravity)...
 git pull origin antigravity
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERRO] Falha ao baixar atualizacoes do Git.
+    pause
+    exit /b %ERRORLEVEL%
+)
 
 echo.
 echo [3/6] Instalando dependencias do Backend...
@@ -39,6 +45,11 @@ echo.
 echo [5/6] Instalando e Compilando Frontend...
 cd frontend
 call npm install
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERRO] Falha ao instalar dependencias do frontend.
+    pause
+    exit /b %ERRORLEVEL%
+)
 call npm run build
 if %ERRORLEVEL% NEQ 0 (
     echo [ERRO] Falha ao compilar o frontend.
@@ -49,13 +60,14 @@ cd ..
 
 echo.
 echo [6/6] Reiniciando o sistema no PM2...
-:: Tenta iniciar. Se ja existir, ele apenas inicia; se nao, cria o processo.
+:: Inicia ou Reinicia o processo
 call pm2 start backend/src/server.js --name "Gestao-Integrada"
 call pm2 save
 
 echo.
 echo ===================================================
 echo   ATUALIZACAO CONCLUIDA COM SUCESSO!
-echo   O sistema ja deve estar acessivel.
+echo   O sistema ja deve estar acessivel em producao.
 echo ===================================================
 pause
+endlocal
