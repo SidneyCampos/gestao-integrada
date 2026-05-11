@@ -1,7 +1,7 @@
 /**
  * @file ConsumableMaterialController.js
  * @description Controlador para o módulo de Materiais de Consumo.
- * Permite o lançamento ágil de requisições com itens de texto livre.
+ * Permite requisições e gerencia automaticamente a baixa/estorno de estoque.
  * @module Warehouse/ConsumableMaterialController
  */
 
@@ -10,7 +10,7 @@ const prisma = require('../../shared/database/prisma');
 class ConsumableMaterialController {
     /**
      * Salva uma nova requisição de consumo e seus itens vinculados.
-     * Calcula o valor total e utiliza transação para garantir integridade.
+     * Dá baixa automática no estoque dos produtos.
      */
     static async salvarRequisicao(req, res) {
         try {
@@ -34,26 +34,38 @@ class ConsumableMaterialController {
                 });
             }
 
-            // Cálculo dos valores no backend para segurança
+            // Validação de estoque prévia
             let valorTotalGeral = 0;
-            const itensProcessados = itens.map(item => {
+            const itensProcessados = [];
+
+            for (const item of itens) {
                 const qtd = parseFloat(item.quantidade) || 0;
                 const vlrUnit = parseFloat(item.valorUnitario) || 0;
                 const subtotal = qtd * vlrUnit;
-                
                 valorTotalGeral += subtotal;
 
-                return {
-                    descricaoProduto: item.descricaoProduto,
+                if (item.produtoId) {
+                    const produto = await prisma.produtoConsumo.findUnique({ where: { id: parseInt(item.produtoId) } });
+                    if (!produto) {
+                        return res.status(404).json({ erro: `Produto ID ${item.produtoId} não encontrado.` });
+                    }
+                    if (produto.quantidadeEstoque < qtd) {
+                        return res.status(400).json({ erro: `Estoque insuficiente para ${produto.nome}. Requer ${qtd}, mas só há ${produto.quantidadeEstoque}.` });
+                    }
+                }
+
+                itensProcessados.push({
+                    produtoId: item.produtoId ? parseInt(item.produtoId) : null,
+                    descricaoProduto: item.descricaoProduto || "Item Genérico",
                     quantidade: qtd,
                     valorUnitario: vlrUnit,
                     subtotal: subtotal
-                };
-            });
+                });
+            }
 
-            // Execução em transação (Capa + Itens)
+            // Execução em transação (Capa + Itens + Baixa de Estoque)
             const resultado = await prisma.$transaction(async (tx) => {
-                return await tx.requisicaoConsumo.create({
+                const reqCriada = await tx.requisicaoConsumo.create({
                     data: {
                         departamentoDestino,
                         mesReferencia,
@@ -65,6 +77,17 @@ class ConsumableMaterialController {
                     },
                     include: { itens: true }
                 });
+
+                for (const item of itensProcessados) {
+                    if (item.produtoId) {
+                        await tx.produtoConsumo.update({
+                            where: { id: item.produtoId },
+                            data: { quantidadeEstoque: { decrement: item.quantidade } }
+                        });
+                    }
+                }
+
+                return reqCriada;
             });
 
             return res.status(201).json(resultado);
@@ -81,7 +104,9 @@ class ConsumableMaterialController {
         try {
             const requisicoes = await prisma.requisicaoConsumo.findMany({
                 include: {
-                    itens: true,
+                    itens: {
+                        include: { produto: true } // Inclui dados do produto se houver
+                    },
                     usuario: {
                         select: { nome: true }
                     }
@@ -99,7 +124,7 @@ class ConsumableMaterialController {
 
     /**
      * Atualiza uma requisição existente.
-     * Remove os itens antigos e recria os novos para garantir consistência.
+     * Estorna o estoque antigo e aplica a baixa do novo estoque.
      */
     static async atualizarRequisicao(req, res) {
         try {
@@ -110,39 +135,97 @@ class ConsumableMaterialController {
                 return res.status(400).json({ erro: "Dados incompletos para atualizar a requisição." });
             }
 
-            let valorTotalGeral = 0;
-            const itensProcessados = itens.map(item => {
-                const qtd = parseFloat(item.quantidade) || 0;
-                const vlrUnit = parseFloat(item.valorUnitario) || 0;
-                const subtotal = qtd * vlrUnit;
-                valorTotalGeral += subtotal;
-                return {
-                    descricaoProduto: item.descricaoProduto,
-                    quantidade: qtd,
-                    valorUnitario: vlrUnit,
-                    subtotal: subtotal
-                };
+            const requisicaoAntiga = await prisma.requisicaoConsumo.findUnique({
+                where: { id: parseInt(id) },
+                include: { itens: true }
             });
 
+            if (!requisicaoAntiga) return res.status(404).json({ erro: "Requisição não encontrada." });
+
+            let valorTotalGeral = 0;
+            const itensProcessados = [];
+            const balancoProdutos = {}; // produtoId -> { precisa: X, devolve: Y }
+
+            // Analisa o que vai ser devolvido
+            for (const itemAntigo of requisicaoAntiga.itens) {
+                if (itemAntigo.produtoId) {
+                    if (!balancoProdutos[itemAntigo.produtoId]) balancoProdutos[itemAntigo.produtoId] = { precisa: 0, devolve: 0 };
+                    balancoProdutos[itemAntigo.produtoId].devolve += itemAntigo.quantidade;
+                }
+            }
+
+            // Analisa o que vai ser exigido e processa a nova lista
+            for (const itemNovo of itens) {
+                const qtd = parseFloat(itemNovo.quantidade) || 0;
+                const vlrUnit = parseFloat(itemNovo.valorUnitario) || 0;
+                valorTotalGeral += (qtd * vlrUnit);
+
+                if (itemNovo.produtoId) {
+                    const pid = parseInt(itemNovo.produtoId);
+                    if (!balancoProdutos[pid]) balancoProdutos[pid] = { precisa: 0, devolve: 0 };
+                    balancoProdutos[pid].precisa += qtd;
+                }
+
+                itensProcessados.push({
+                    produtoId: itemNovo.produtoId ? parseInt(itemNovo.produtoId) : null,
+                    descricaoProduto: itemNovo.descricaoProduto || "Item Genérico",
+                    quantidade: qtd,
+                    valorUnitario: vlrUnit,
+                    subtotal: (qtd * vlrUnit)
+                });
+            }
+
+            // Valida se o estoque suporta a mudança
+            for (const pidStr in balancoProdutos) {
+                const pid = parseInt(pidStr);
+                const produto = await prisma.produtoConsumo.findUnique({ where: { id: pid } });
+                if (!produto) return res.status(404).json({ erro: `Produto ID ${pid} não encontrado.` });
+                
+                const estoqueProjetado = produto.quantidadeEstoque + balancoProdutos[pid].devolve - balancoProdutos[pid].precisa;
+                if (estoqueProjetado < 0) {
+                    return res.status(400).json({ erro: `Estoque insuficiente para "${produto.nome}". Ajuste impossível.` });
+                }
+            }
+
             const resultado = await prisma.$transaction(async (tx) => {
-                // 1. Removemos os itens antigos
+                // 1. Estornar itens antigos
+                for (const itemAntigo of requisicaoAntiga.itens) {
+                    if (itemAntigo.produtoId) {
+                        await tx.produtoConsumo.update({
+                            where: { id: itemAntigo.produtoId },
+                            data: { quantidadeEstoque: { increment: itemAntigo.quantidade } }
+                        });
+                    }
+                }
+
+                // 2. Deletar itens antigos
                 await tx.itemRequisicaoConsumo.deleteMany({
                     where: { requisicaoId: parseInt(id) }
                 });
 
-                // 2. Atualizamos a capa e criamos os novos itens
-                return await tx.requisicaoConsumo.update({
+                // 3. Atualizar capa e criar novos itens
+                const reqAtualizada = await tx.requisicaoConsumo.update({
                     where: { id: parseInt(id) },
                     data: {
                         departamentoDestino,
                         mesReferencia,
                         valorTotal: valorTotalGeral,
-                        itens: {
-                            create: itensProcessados
-                        }
+                        itens: { create: itensProcessados }
                     },
                     include: { itens: true }
                 });
+
+                // 4. Dar baixa dos novos itens
+                for (const itemNovo of itensProcessados) {
+                    if (itemNovo.produtoId) {
+                        await tx.produtoConsumo.update({
+                            where: { id: itemNovo.produtoId },
+                            data: { quantidadeEstoque: { decrement: itemNovo.quantidade } }
+                        });
+                    }
+                }
+
+                return reqAtualizada;
             });
 
             return res.status(200).json(resultado);
@@ -153,15 +236,37 @@ class ConsumableMaterialController {
     }
 
     /**
-     * Exclui uma requisição e seus itens (via Cascade).
+     * Exclui uma requisição e seus itens, restaurando o estoque.
      */
     static async deletarRequisicao(req, res) {
         try {
             const { id } = req.params;
-            await prisma.requisicaoConsumo.delete({
-                where: { id: parseInt(id) }
+            
+            const reqParaExcluir = await prisma.requisicaoConsumo.findUnique({
+                where: { id: parseInt(id) },
+                include: { itens: true }
             });
-            return res.status(200).json({ mensagem: "Requisição excluída com sucesso." });
+
+            if (!reqParaExcluir) return res.status(404).json({ erro: "Requisição não encontrada." });
+
+            await prisma.$transaction(async (tx) => {
+                // 1. Estornar o estoque
+                for (const item of reqParaExcluir.itens) {
+                    if (item.produtoId) {
+                        await tx.produtoConsumo.update({
+                            where: { id: item.produtoId },
+                            data: { quantidadeEstoque: { increment: item.quantidade } }
+                        });
+                    }
+                }
+
+                // 2. Deletar (itens são apagados via Cascade)
+                await tx.requisicaoConsumo.delete({
+                    where: { id: parseInt(id) }
+                });
+            });
+
+            return res.status(200).json({ mensagem: "Requisição excluída e estoque estornado com sucesso." });
         } catch (erro) {
             console.error("[CONSUMO_DELETE_ERROR]", erro);
             return res.status(500).json({ erro: "Erro ao excluir requisição de consumo." });

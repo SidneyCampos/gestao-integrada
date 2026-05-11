@@ -81,8 +81,18 @@ model Emprestimo {
 }
 
 // ==========================================
-// MÓDULO CONSUMO (LANÇAMENTO ÁGIL)
+// MÓDULO CONSUMO (LANÇAMENTO ÁGIL E ESTOQUE)
 // ==========================================
+
+model ProdutoConsumo {
+  id                 Int      @id @default(autoincrement())
+  nome               String
+  categoria          String   @default("Geral") // Ex: 'Geral', 'Elétrica', 'TI'
+  quantidadeEstoque  Float    @default(0)
+  valorUnitarioAtual Float    @default(0) // Preço base para lançamentos
+
+  itensRequisitados  ItemRequisicaoConsumo[]
+}
 
 model RequisicaoConsumo {
   id                  Int      @id @default(autoincrement())
@@ -102,7 +112,11 @@ model ItemRequisicaoConsumo {
   requisicaoId Int
   requisicao   RequisicaoConsumo @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
 
-  descricaoProduto String // Texto livre para agilidade
+  // Opcional para manter compatibilidade com dados antigos
+  produtoId    Int?
+  produto      ProdutoConsumo?   @relation(fields: [produtoId], references: [id])
+
+  descricaoProduto String // Mantido para histórico
   quantidade       Float
   valorUnitario    Float
   subtotal         Float

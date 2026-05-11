@@ -12,6 +12,7 @@ const toolInventoryController = require('./toolInventoryController');
 const inventoryLoanController = require('./inventoryLoanController');
 const externalEmployeeController = require('./externalEmployeeController');
 const consumableMaterialController = require('./consumableMaterialController');
+const consumableProductController = require('./consumableProductController');
 const sectorMiddleware = require('../../shared/middlewares/sectorMiddleware');
 
 // --- Rotas de Ferramentas ---
@@ -41,5 +42,11 @@ router.get('/consumo', consumableMaterialController.listarRequisicoes);
 router.post('/consumo', consumableMaterialController.salvarRequisicao);
 router.put('/consumo/:id', consumableMaterialController.atualizarRequisicao);
 router.delete('/consumo/:id', consumableMaterialController.deletarRequisicao);
+
+// --- Rotas do Catálogo de Produtos (Estoque) ---
+router.get('/produtos-consumo', consumableProductController.listar);
+router.post('/produtos-consumo', consumableProductController.criar);
+router.put('/produtos-consumo/:id', consumableProductController.atualizar);
+router.delete('/produtos-consumo/:id', consumableProductController.deletar);
 
 module.exports = router;
