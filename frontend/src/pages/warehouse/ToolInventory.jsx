@@ -627,35 +627,20 @@ export default function ToolInventory() {
                               </button>
 
                               {menuAbertoId === ferramenta.id && (
-                                {/* Updated dropdown menu */}
-{menuAbertoId === ferramenta.id && (
-  <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-bottom-right">
-    <div className="px-4 py-2 border-b border-slate-100 bg-slate-50">
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Opções</p>
-    </div>
-    <button
-      onClick={() => {
-        abrirEditarQuantidade(ferramenta);
-        setMenuAbertoId(null);
-      }}
-      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 transition-colors font-bold"
-    >
-      <Edit3 className="w-4 h-4" />
-      Editar Quantidade
-    </button>
-    <button
-      onClick={() => handleDeletarFerramenta(ferramenta.id)}
-      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-bold"
-    >
-      <Trash2 className="w-4 h-4" />
-      Excluir Item
-    </button>
-  </div>
-)}
+                                <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-bottom-right">
                                   <div className="px-4 py-2 border-b border-slate-100 bg-slate-50">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Opções</p>
                                   </div>
-                                  
+                                  <button
+                                    onClick={() => {
+                                      abrirEditarQuantidade(ferramenta);
+                                      setMenuAbertoId(null);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 transition-colors font-bold"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                    Editar Quantidade
+                                  </button>
                                   <button
                                     onClick={() => handleDeletarFerramenta(ferramenta.id)}
                                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-bold"
