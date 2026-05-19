@@ -57,6 +57,7 @@ export default function ToolInventory() {
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const [ferramentaEditando, setFerramentaEditando] = useState(null);
   const [novaQuantidade, setNovaQuantidade] = useState(1);
+  const [menuAbertoId, setMenuAbertoId] = useState(null);
 
   // Handler to open edit modal
   const abrirEditarQuantidade = (ferramenta) => {
@@ -84,83 +85,6 @@ export default function ToolInventory() {
       setSalvando(false);
     }
   };
-
-  // Updated menu dropdown with edit option and upward placement
-  {/* MENU DE GERENCIAMENTO (3 PONTINHOS) */}
-  <div className="relative">
-    <button
-      onClick={(e) => {
-        e.stopPropagation(); // Evita que o listener de clique fora feche o menu imediatamente
-        setMenuAbertoId(menuAbertoId === ferramenta.id ? null : ferramenta.id);
-      }}
-      className={`p-2 rounded-lg transition-all ${menuAbertoId === ferramenta.id ? "bg-blue-100 text-blue-600" : "text-slate-400 hover:text-blue-600 hover:bg-blue-50"}`}
-      title="Gerenciar Ferramenta"
-    >
-      <MoreVertical className="w-5 h-5 lg:w-4 lg:h-4" />
-    </button>
-
-    {menuAbertoId === ferramenta.id && (
-      <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-bottom-right">
-        <div className="px-4 py-2 border-b border-slate-100 bg-slate-50">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Opções</p>
-        </div>
-        <button
-          onClick={() => {
-            abrirEditarQuantidade(ferramenta);
-            setMenuAbertoId(null);
-          }}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 transition-colors font-bold"
-        >
-          <Edit3 className="w-4 h-4" />
-          Editar Quantidade
-        </button>
-        <button
-          onClick={() => handleDeletarFerramenta(ferramenta.id)}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-bold"
-        >
-          <Trash2 className="w-4 h-4" />
-          Excluir Item
-        </button>
-      </div>
-    )}
-  </div>
-
-  {/* Modal Editar Quantidade */}
-  <Modal
-    isOpen={modalEditarAberto}
-    onClose={() => setModalEditarAberto(false)}
-    title="Editar Quantidade"
-  >
-    <form onSubmit={handleSalvarEditar} className="space-y-4">
-      <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1">Nova Quantidade Total</label>
-        <input
-          type="number"
-          min="0"
-          required
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none"
-          value={novaQuantidade}
-          onChange={(e) => setNovaQuantidade(e.target.value)}
-        />
-      </div>
-      <div className="flex justify-end gap-3 pt-4">
-        <button
-          type="button"
-          onClick={() => setModalEditarAberto(false)}
-          className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={salvando}
-          className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
-        >
-          Salvar
-        </button>
-      </div>
-    </form>
-  </Modal>
 
   // Fecha o menu de opções ao clicar fora dele
   useEffect(() => {
@@ -991,6 +915,43 @@ export default function ToolInventory() {
             </button>
             <button type="submit" disabled={salvando} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition-colors">
               {salvando ? "Salvando..." : (funcionarioEditando ? "Atualizar Dados" : "Confirmar Cadastro")}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ================= MODAL: EDITAR QUANTIDADE ================= */}
+      <Modal
+        isOpen={modalEditarAberto}
+        onClose={() => setModalEditarAberto(false)}
+        title="Editar Quantidade"
+      >
+        <form onSubmit={handleSalvarEditar} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Nova Quantidade Total</label>
+            <input
+              type="number"
+              min="0"
+              required
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+              value={novaQuantidade}
+              onChange={(e) => setNovaQuantidade(e.target.value)}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setModalEditarAberto(false)}
+              className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando}
+              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              {salvando ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Salvar"}
             </button>
           </div>
         </form>
