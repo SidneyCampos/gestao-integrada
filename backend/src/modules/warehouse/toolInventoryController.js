@@ -91,6 +91,50 @@ class ToolInventoryController {
     }
 
     // ========================================================
+    // MÉTODO: ATUALIZAR FERRAMENTA
+    // ========================================================
+    static async atualizar(req, res) {
+        try {
+            const { id } = req.params;
+            const { nome, codigoPatrimonio, quantidadeTotal } = req.body;
+
+            if (!nome || !quantidadeTotal) {
+                return res.status(400).json({ erro: "Nome e Quantidade Total são obrigatórios." });
+            }
+
+            const ferramentaAtual = await prisma.ferramenta.findUnique({
+                where: { id: parseInt(id) }
+            });
+
+            if (!ferramentaAtual) {
+                return res.status(404).json({ erro: "Ferramenta não encontrada." });
+            }
+
+            const varInt = parseInt(quantidadeTotal) - ferramentaAtual.quantidadeTotal;
+            const novaQtdDisponivel = ferramentaAtual.qtdDisponivel + varInt;
+
+            if (novaQtdDisponivel < 0) {
+                return res.status(400).json({ erro: "A quantidade total não pode ser menor que a quantidade já emprestada." });
+            }
+
+            const ferramentaAtualizada = await prisma.ferramenta.update({
+                where: { id: parseInt(id) },
+                data: {
+                    nome: nome.toUpperCase(),
+                    codigoPatrimonio: (codigoPatrimonio && codigoPatrimonio.trim() !== "") ? codigoPatrimonio.trim().toUpperCase() : null,
+                    quantidadeTotal: parseInt(quantidadeTotal),
+                    qtdDisponivel: novaQtdDisponivel
+                }
+            });
+
+            return res.status(200).json(ferramentaAtualizada);
+        } catch (erro) {
+            console.error("Erro ao atualizar ferramenta:", erro);
+            return res.status(500).json({ erro: "Erro ao tentar atualizar a ferramenta." });
+        }
+    }
+
+    // ========================================================
     // MÉTODO: AJUSTAR ESTOQUE (ENTRADA/SAÍDA RÁPIDA)
     // ========================================================
     /**

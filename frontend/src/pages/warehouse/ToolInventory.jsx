@@ -53,34 +53,36 @@ export default function ToolInventory() {
     quantidadeTotal: 1,
   });
 
-  // New state for editing quantity
+  // New state for editing tool
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const [ferramentaEditando, setFerramentaEditando] = useState(null);
-  const [novaQuantidade, setNovaQuantidade] = useState(1);
   const [menuAbertoId, setMenuAbertoId] = useState(null);
 
   // Handler to open edit modal
-  const abrirEditarQuantidade = (ferramenta) => {
-    setFerramentaEditando(ferramenta);
-    setNovaQuantidade(ferramenta.quantidadeTotal);
+  const abrirEditarFerramenta = (ferramenta) => {
+    setFerramentaEditando({
+      ...ferramenta,
+      codigoPatrimonio: ferramenta.codigoPatrimonio || ""
+    });
     setModalEditarAberto(true);
   };
 
-  // Submit edit quantity
-  const handleSalvarEditar = async (e) => {
+  // Submit edit tool
+  const handleEditarFerramenta = async (e) => {
     e.preventDefault();
     if (!ferramentaEditando) return;
-    const variacao = parseInt(novaQuantidade) - parseInt(ferramentaEditando.quantidadeTotal);
+    
     try {
       setSalvando(true);
-      await api.patch(`/almoxarifado/ferramentas/${ferramentaEditando.id}/ajustar-estoque`, {
-        variacao,
-        usuarioId: null,
+      await api.put(`/almoxarifado/ferramentas/${ferramentaEditando.id}`, {
+        nome: ferramentaEditando.nome,
+        codigoPatrimonio: ferramentaEditando.codigoPatrimonio,
+        quantidadeTotal: parseInt(ferramentaEditando.quantidadeTotal)
       });
       setModalEditarAberto(false);
       buscarDadosIniciais();
     } catch (erro) {
-      alert("Erro ao editar quantidade.");
+      alert(erro.response?.data?.erro || "Erro ao editar ferramenta.");
     } finally {
       setSalvando(false);
     }
@@ -557,13 +559,13 @@ export default function ToolInventory() {
                                   </div>
                                   <button
                                     onClick={() => {
-                                      abrirEditarQuantidade(ferramenta);
+                                      abrirEditarFerramenta(ferramenta);
                                       setMenuAbertoId(null);
                                     }}
                                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 transition-colors font-bold"
                                   >
                                     <Edit3 className="w-4 h-4" />
-                                    Editar Quantidade
+                                    Editar
                                   </button>
                                   <button
                                     onClick={() => handleDeletarFerramenta(ferramenta.id)}
@@ -699,7 +701,7 @@ export default function ToolInventory() {
               onChange={(e) =>
                 setNovaFerramenta({
                   ...novaFerramenta,
-                  nome: e.target.value,
+                  nome: e.target.value.toUpperCase(),
                 })
               }
               value={novaFerramenta.nome}
@@ -718,7 +720,7 @@ export default function ToolInventory() {
                 onChange={(e) =>
                   setNovaFerramenta({
                     ...novaFerramenta,
-                    codigoPatrimonio: e.target.value,
+                    codigoPatrimonio: e.target.value.toUpperCase(),
                   })
                 }
                 value={novaFerramenta.codigoPatrimonio}
@@ -920,23 +922,64 @@ export default function ToolInventory() {
         </form>
       </Modal>
 
-      {/* ================= MODAL: EDITAR QUANTIDADE ================= */}
+      {/* ================= MODAL: EDITAR FERRAMENTA ================= */}
       <Modal
         isOpen={modalEditarAberto}
         onClose={() => setModalEditarAberto(false)}
-        title="Editar Quantidade"
+        title="Editar Ferramenta"
       >
-        <form onSubmit={handleSalvarEditar} className="space-y-4">
+        <form onSubmit={handleEditarFerramenta} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Nova Quantidade Total</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Descrição / Nome *
+            </label>
             <input
-              type="number"
-              min="0"
+              type="text"
               required
               className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-              value={novaQuantidade}
-              onChange={(e) => setNovaQuantidade(e.target.value)}
+              value={ferramentaEditando?.nome || ""}
+              onChange={(e) =>
+                setFerramentaEditando({
+                  ...ferramentaEditando,
+                  nome: e.target.value.toUpperCase(),
+                })
+              }
             />
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="w-full sm:flex-1">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Cód. Patrimônio
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                value={ferramentaEditando?.codigoPatrimonio || ""}
+                onChange={(e) =>
+                  setFerramentaEditando({
+                    ...ferramentaEditando,
+                    codigoPatrimonio: e.target.value.toUpperCase(),
+                  })
+                }
+              />
+            </div>
+            <div className="w-full sm:w-32">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Nova Quantidade Total</label>
+              <input
+                type="number"
+                min="0"
+                required
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                value={ferramentaEditando?.quantidadeTotal || ""}
+                onChange={(e) =>
+                  setFerramentaEditando({
+                    ...ferramentaEditando,
+                    quantidadeTotal: e.target.value,
+                  })
+                }
+              />
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button
@@ -951,7 +994,7 @@ export default function ToolInventory() {
               disabled={salvando}
               className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
-              {salvando ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Salvar"}
+              {salvando ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Salvar Alterações"}
             </button>
           </div>
         </form>

@@ -18,6 +18,7 @@ const sectorMiddleware = require('../../shared/middlewares/sectorMiddleware');
 // --- Rotas de Ferramentas ---
 router.get('/ferramentas', toolInventoryController.listar);
 router.post('/ferramentas', toolInventoryController.criar);
+router.put('/ferramentas/:id', toolInventoryController.atualizar);
 router.delete('/ferramentas/:id', toolInventoryController.deletar);
 
 // ROTA DE AJUSTE RÁPIDO (Protegida para TI ou Admin)
