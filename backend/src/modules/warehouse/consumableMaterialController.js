@@ -20,19 +20,7 @@ class ConsumableMaterialController {
                 return res.status(400).json({ erro: "Dados incompletos para salvar a requisição." });
             }
 
-            // REGRA DE NEGÓCIO: Apenas um lançamento por setor/mês
-            const registroExistente = await prisma.requisicaoConsumo.findFirst({
-                where: {
-                    departamentoDestino,
-                    mesReferencia
-                }
-            });
 
-            if (registroExistente) {
-                return res.status(400).json({ 
-                    erro: `Já existe um lançamento para o setor "${departamentoDestino}" no mês ${mesReferencia}. Edite o registro existente para adicionar mais materiais.` 
-                });
-            }
 
             // Validação de estoque prévia
             let valorTotalGeral = 0;
