@@ -223,36 +223,61 @@ export default function ITAssetManagement() {
                 const Icon = item.nome.toLowerCase().includes('toner') ? Package : HardDrive;
                 
                 return (
-                  <tr key={item.id} className="block lg:table-row bg-white hover:bg-slate-50 transition-colors p-4 lg:p-0 relative">
-                    <td className="px-4 py-3 lg:py-2 flex items-center gap-3 lg:table-cell border-b border-slate-100 lg:border-none">
-                      <span className="lg:hidden text-xs font-bold uppercase text-slate-400 block w-full mb-1 absolute top-4 left-4">Descrição do Item</span>
-                      <div className="flex items-center gap-3 lg:mt-0 mt-6 w-full">
-                        <div className="w-8 h-8 bg-indigo-50 rounded flex items-center justify-center text-indigo-600 shrink-0">
-                          <Icon className="w-4 h-4" />
+                  <tr key={item.id} className="block lg:table-row bg-white hover:bg-slate-50 transition-colors p-3 lg:p-0 border-b border-slate-200 lg:border-none">
+                    {/* Nome e Info (Mobile + Desktop) */}
+                    <td className="block lg:table-cell border-none px-0 py-1 lg:px-4 lg:py-2">
+                      <div className="flex items-start lg:items-center justify-between gap-3 w-full">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-indigo-50 rounded flex items-center justify-center text-indigo-600 shrink-0">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 leading-tight">{item.nome}</span>
+                            {/* Tags exclusivas do mobile */}
+                            <div className="flex lg:hidden gap-1.5 mt-1">
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${isConsumable ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                {isConsumable ? "Consumível" : "Equip"}
+                              </span>
+                              <span className="font-mono text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                                {item.codigoPatrimonio || "N/A"}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <span className="font-bold text-slate-800 leading-tight block">{item.nome}</span>
+                        {/* Quantidade Mobile (Canto superior direito) */}
+                        <div className="flex flex-col items-end lg:hidden">
+                          <span className={`text-xl font-black leading-none ${item.quantidadeTotal <= 0 ? 'text-rose-500' : 'text-slate-900'}`}>
+                            {item.quantidadeTotal}
+                          </span>
+                          <span className="text-[9px] font-bold uppercase text-slate-400 mt-0.5">Estoque</span>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
-                      <span className="lg:hidden text-xs font-bold uppercase text-slate-400">Tipo</span>
+                    
+                    {/* Tipo - Oculto no mobile */}
+                    <td className="hidden lg:table-cell px-4 py-2 border-none">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isConsumable ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                         {isConsumable ? "Consumível" : "Equipamento"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
-                      <span className="lg:hidden text-xs font-bold uppercase text-slate-400">Patrimônio</span>
+
+                    {/* Patrimônio - Oculto no mobile */}
+                    <td className="hidden lg:table-cell px-4 py-2 border-none">
                       <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
                         {item.codigoPatrimonio || "N/A"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center border-b border-slate-100 lg:border-none">
-                      <span className="lg:hidden text-xs font-bold uppercase text-slate-400">Quantidade Atual</span>
-                      <span className={`text-xl lg:text-sm font-black ${item.quantidadeTotal <= 0 ? 'text-rose-500' : 'text-slate-900'}`}>
+
+                    {/* Quantidade Desktop - Oculto no mobile */}
+                    <td className="hidden lg:table-cell text-center px-4 py-2 border-none">
+                      <span className={`text-sm font-black ${item.quantidadeTotal <= 0 ? 'text-rose-500' : 'text-slate-900'}`}>
                         {item.quantidadeTotal}
                       </span>
                     </td>
-                    <td className="px-4 py-3 lg:py-2 block lg:table-cell">
-                      <div className="flex items-center justify-end gap-2 mt-2 lg:mt-0">
+
+                    {/* Ações */}
+                    <td className="block lg:table-cell px-0 py-2 lg:px-4 lg:py-2 border-none mt-2 lg:mt-0">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleEntradaDireta(item.id)}
                           className="flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-3 py-2 lg:py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all font-bold text-xs border border-emerald-100 shadow-sm lg:shadow-none"
