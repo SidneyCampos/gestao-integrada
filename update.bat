@@ -60,8 +60,8 @@ cd ..
 
 echo.
 echo [6/6] Reiniciando o sistema no PM2...
-:: Inicia ou Reinicia o processo
-call pm2 start backend/src/server.js --name "Gestao-Integrada"
+:: Inicia ou Reinicia o processo via Ecosystem para auto-reload
+call pm2 start ecosystem.config.js
 call pm2 save
 
 echo.
