@@ -194,56 +194,93 @@ export default function ITAssetManagement() {
         />
       </div>
 
-      {/* Lista de Itens (Cards) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {carregando ? (
-          <div className="p-12 text-center text-slate-400 col-span-full">Sincronizando inventário...</div>
-        ) : itensFiltrados.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200 col-span-full">
-            Nenhum item encontrado no estoque.
-          </div>
-        ) : (
-          itensFiltrados.map(item => (
-            <div key={item.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col gap-4">
-              <div className="flex justify-between items-start">
-                <div className="flex gap-3">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                    {item.nome.toLowerCase().includes('toner') ? <Package /> : <HardDrive />}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 leading-tight">{item.nome}</h3>
-                    <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase mt-1 inline-block">
-                      {item.codigoPatrimonio || "Consumível"}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-black text-slate-900">{item.quantidadeTotal}</span>
-                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Unid.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setItemSelecionado(item);
-                    setModalSaidaAberto(true);
-                  }}
-                  disabled={item.quantidadeTotal <= 0}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 active:scale-95 transition-all disabled:opacity-30 font-bold text-sm"
-                >
-                  <MinusCircle className="w-5 h-5" /> Saída
-                </button>
-                <button
-                  onClick={() => handleEntradaDireta(item.id)}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 active:scale-95 transition-all font-bold text-sm"
-                >
-                  <PlusCircle className="w-5 h-5" /> Entrada
-                </button>
-              </div>
-            </div>
-          ))
-        )}
+      {/* Tabela de Itens Data-Dense (Responsiva para Mobile) */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full text-left border-collapse block lg:table">
+          <thead className="hidden lg:table-header-group">
+            <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase text-slate-500 font-semibold tracking-widest block lg:table-row">
+              <th className="px-4 py-3 block lg:table-cell">Descrição do Item</th>
+              <th className="px-4 py-3 block lg:table-cell">Tipo</th>
+              <th className="px-4 py-3 block lg:table-cell">Patrimônio</th>
+              <th className="px-4 py-3 text-center block lg:table-cell">Quantidade Atual</th>
+              <th className="px-4 py-3 text-right block lg:table-cell">Ações</th>
+            </tr>
+          </thead>
+          <tbody className="grid grid-cols-1 lg:table-row-group divide-y divide-slate-100 text-sm text-slate-700">
+            {carregando ? (
+              <tr className="block lg:table-row">
+                <td colSpan="5" className="p-12 text-center text-slate-400 block lg:table-cell">Sincronizando inventário...</td>
+              </tr>
+            ) : itensFiltrados.length === 0 ? (
+              <tr className="block lg:table-row">
+                <td colSpan="5" className="p-12 text-center text-slate-400 bg-slate-50 block lg:table-cell">
+                  Nenhum item encontrado no estoque.
+                </td>
+              </tr>
+            ) : (
+              itensFiltrados.map(item => {
+                const isConsumable = !item.codigoPatrimonio;
+                const Icon = item.nome.toLowerCase().includes('toner') ? Package : HardDrive;
+                
+                return (
+                  <tr key={item.id} className="block lg:table-row bg-white hover:bg-slate-50 transition-colors p-4 lg:p-0 relative">
+                    <td className="px-4 py-3 lg:py-2 flex items-center gap-3 lg:table-cell border-b border-slate-100 lg:border-none">
+                      <span className="lg:hidden text-xs font-bold uppercase text-slate-400 block w-full mb-1 absolute top-4 left-4">Descrição do Item</span>
+                      <div className="flex items-center gap-3 lg:mt-0 mt-6 w-full">
+                        <div className="w-8 h-8 bg-indigo-50 rounded flex items-center justify-center text-indigo-600 shrink-0">
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <span className="font-bold text-slate-800 leading-tight block">{item.nome}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
+                      <span className="lg:hidden text-xs font-bold uppercase text-slate-400">Tipo</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isConsumable ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {isConsumable ? "Consumível" : "Equipamento"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell border-b border-slate-100 lg:border-none">
+                      <span className="lg:hidden text-xs font-bold uppercase text-slate-400">Patrimônio</span>
+                      <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                        {item.codigoPatrimonio || "N/A"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 lg:py-2 flex justify-between items-center lg:table-cell lg:text-center border-b border-slate-100 lg:border-none">
+                      <span className="lg:hidden text-xs font-bold uppercase text-slate-400">Quantidade Atual</span>
+                      <span className={`text-xl lg:text-sm font-black ${item.quantidadeTotal <= 0 ? 'text-rose-500' : 'text-slate-900'}`}>
+                        {item.quantidadeTotal}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 lg:py-2 block lg:table-cell">
+                      <div className="flex items-center justify-end gap-2 mt-2 lg:mt-0">
+                        <button
+                          onClick={() => handleEntradaDireta(item.id)}
+                          className="flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-3 py-2 lg:py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all font-bold text-xs border border-emerald-100 shadow-sm lg:shadow-none"
+                          title="Entrada Direta (+1)"
+                        >
+                          <PlusCircle className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                          <span>Entrada</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setItemSelecionado(item);
+                            setModalSaidaAberto(true);
+                          }}
+                          disabled={item.quantidadeTotal <= 0}
+                          className="flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-3 py-2 lg:py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs border border-rose-100 shadow-sm lg:shadow-none"
+                          title="Saída (Baixa de Estoque)"
+                        >
+                          <MinusCircle className="w-4 h-4 lg:w-3.5 lg:h-3.5" />
+                          <span>Saída</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Histórico de Saídas */}
