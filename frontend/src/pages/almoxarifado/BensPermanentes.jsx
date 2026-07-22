@@ -16,15 +16,14 @@ import {
     Loader2,
     AlertCircle,
     Building2,
-    Tag,
     Calendar,
     CheckCircle2,
-    XCircle,
     Hash
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
 import Modal from '../../components/Modal';
+import SetorSelectComCriacao from '../../components/SetorSelectComCriacao';
 
 // Mapa de cores por status para badge visual
 const STATUS_STYLE = {
@@ -98,6 +97,10 @@ export default function BensPermanentes({ usuarioLogado }) {
         } finally {
             setCarregandoSetores(false);
         }
+    };
+
+    const handleSetorCriado = (novoSetor) => {
+        setSetores(prev => [...prev, novoSetor].sort((a, b) => a.nome.localeCompare(b.nome)));
     };
 
     const handleAbrirModal = () => {
@@ -392,31 +395,18 @@ export default function BensPermanentes({ usuarioLogado }) {
                         />
                     </div>
 
-                    {/* Setor de Destino — dinâmico via API */}
+                    {/* Setor de Destino — dinâmico via API com criação inline */}
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             Setor de Destino <span className="text-red-400">*</span>
                         </label>
-                        {carregandoSetores ? (
-                            <div className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 text-sm text-slate-400">
-                                <Loader2 className="w-4 h-4 animate-spin" /> Carregando setores...
-                            </div>
-                        ) : (
-                            <div className="relative">
-                                <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                <select
-                                    value={form.setorId}
-                                    onChange={e => handleFormChange('setorId', e.target.value)}
-                                    className="w-full pl-10 pr-8 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none appearance-none focus:ring-2 focus:ring-violet-200 focus:border-violet-400 transition-colors"
-                                >
-                                    <option value="">Selecione o setor...</option>
-                                    {setores.map(s => (
-                                        <option key={s.id} value={s.id}>{s.nome}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            </div>
-                        )}
+                        <SetorSelectComCriacao
+                            value={form.setorId}
+                            onChange={({ setorId }) => handleFormChange('setorId', setorId)}
+                            setores={setores}
+                            onSetorCriado={handleSetorCriado}
+                            carregando={carregandoSetores}
+                        />
                     </div>
 
                     {/* Data de Entrada + Status — linha 2 campos */}

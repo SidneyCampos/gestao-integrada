@@ -17,8 +17,11 @@ router.put('/usuarios/:id', authMiddleware, adminMiddleware, userController.atua
 router.delete('/usuarios/:id', authMiddleware, adminMiddleware, userController.deletar);
 router.patch('/usuarios/:id/senha', authMiddleware, userController.alterarSenha);
 
-// Rota de setores
+// Rotas de setores — listar e criar abertas a autenticados; editar e deletar requerem admin
 router.get('/setores', authMiddleware, sectorController.listar);
-router.post('/setores', authMiddleware, adminMiddleware, sectorController.criar);
+router.post('/setores', authMiddleware, sectorController.criar);
+router.put('/setores/:id', authMiddleware, adminMiddleware, sectorController.atualizar);
+router.delete('/setores/:id', authMiddleware, adminMiddleware, sectorController.deletar);
+
 
 module.exports = router;

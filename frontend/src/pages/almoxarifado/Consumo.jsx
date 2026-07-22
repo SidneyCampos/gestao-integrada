@@ -30,6 +30,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
 import Modal from '../../components/Modal';
+import SetorSelectComCriacao from '../../components/SetorSelectComCriacao';
 
 export default function Consumo({ usuarioLogado }) {
     const navigate = useNavigate();
@@ -98,15 +99,16 @@ export default function Consumo({ usuarioLogado }) {
         }
     };
 
-    // --- Handlers do Setor: garante que departamentoDestino recebe o nome e setorId recebe o id ---
-    const handleSetorChange = (e) => {
-        const setorId = e.target.value;
-        const setorSelecionado = setores.find(s => String(s.id) === String(setorId));
+    const handleSetorChange = ({ setorId, nomeSetor }) => {
         setNovaRequisicao(p => ({
             ...p,
-            setorId: setorId,
-            departamentoDestino: setorSelecionado ? setorSelecionado.nome : ''
+            setorId,
+            departamentoDestino: nomeSetor
         }));
+    };
+
+    const handleSetorCriado = (novoSetor) => {
+        setSetores(prev => [...prev, novoSetor].sort((a, b) => a.nome.localeCompare(b.nome)));
     };
 
     // --- AÇÕES ---
@@ -425,33 +427,17 @@ export default function Consumo({ usuarioLogado }) {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* SELECT DE SETOR — populado dinamicamente via API /core/setores */}
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-400 uppercase">
                                 Departamento de Destino
                             </label>
-                            <div className="relative">
-                                {carregandoSetores ? (
-                                    <div className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 text-sm text-slate-400">
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Carregando setores...
-                                    </div>
-                                ) : (
-                                    <>
-                                        <select
-                                            value={novaRequisicao.setorId}
-                                            onChange={handleSetorChange}
-                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm appearance-none"
-                                        >
-                                            <option value="">Selecione o setor...</option>
-                                            {setores.map(s => (
-                                                <option key={s.id} value={s.id}>{s.nome}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                    </>
-                                )}
-                            </div>
+                            <SetorSelectComCriacao
+                                value={novaRequisicao.setorId}
+                                onChange={handleSetorChange}
+                                setores={setores}
+                                onSetorCriado={handleSetorCriado}
+                                carregando={carregandoSetores}
+                            />
                             {/* Exibe o nome que será salvo, para transparência */}
                             {novaRequisicao.departamentoDestino && (
                                 <p className="text-[10px] text-cyan-600 font-bold pl-1">
