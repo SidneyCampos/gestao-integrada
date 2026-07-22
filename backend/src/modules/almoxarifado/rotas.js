@@ -12,6 +12,7 @@ const FerramentaController = require('./FerramentaController');
 const EmprestimoController = require('./EmprestimoController');
 const FuncionarioController = require('./FuncionarioController');
 const ConsumoController = require('./ConsumoController');
+const BensPermanentesController = require('./BensPermanentesController');
 const sectorMiddleware = require('../../shared/middlewares/sectorMiddleware');
 
 // --- Rotas de Ferramentas ---
@@ -40,5 +41,11 @@ router.get('/consumo', ConsumoController.listarRequisicoes);
 router.post('/consumo', ConsumoController.salvarRequisicao);
 router.put('/consumo/:id', ConsumoController.atualizarRequisicao);
 router.delete('/consumo/:id', ConsumoController.deletarRequisicao);
+
+// --- Rotas de Bens Permanentes (Patrimônio) ---
+router.get('/bens-permanentes', BensPermanentesController.listar);
+router.post('/bens-permanentes', BensPermanentesController.criar);
+router.put('/bens-permanentes/:id', BensPermanentesController.atualizar);
+router.delete('/bens-permanentes/:id', BensPermanentesController.deletar);
 
 module.exports = router;

@@ -14,7 +14,25 @@ class ConsumoController {
      */
     static async salvarRequisicao(req, res) {
         try {
-            const { departamentoDestino, mesReferencia, usuarioId, itens } = req.body;
+            let { departamentoDestino, setorId, mesReferencia, usuarioId, itens } = req.body;
+
+            // Resolução de Setor para padronização sem quebrar o legado
+            let idSetorSalvar = setorId ? parseInt(setorId) : null;
+            if (setorId && (!departamentoDestino || departamentoDestino.trim() === '')) {
+                const setorEncontrado = await prisma.setor.findUnique({
+                    where: { id: idSetorSalvar }
+                });
+                if (setorEncontrado) {
+                    departamentoDestino = setorEncontrado.nome;
+                }
+            } else if (departamentoDestino && !idSetorSalvar) {
+                const setorEncontrado = await prisma.setor.findUnique({
+                    where: { nome: departamentoDestino }
+                });
+                if (setorEncontrado) {
+                    idSetorSalvar = setorEncontrado.id;
+                }
+            }
 
             if (!departamentoDestino || !mesReferencia || !usuarioId || !itens || !itens.length) {
                 return res.status(400).json({ erro: "Dados incompletos para salvar a requisição." });
@@ -56,6 +74,7 @@ class ConsumoController {
                 return await tx.requisicaoConsumo.create({
                     data: {
                         departamentoDestino,
+                        setorId: idSetorSalvar,
                         mesReferencia,
                         usuarioId: parseInt(usuarioId),
                         valorTotal: valorTotalGeral,
@@ -63,7 +82,7 @@ class ConsumoController {
                             create: itensProcessados
                         }
                     },
-                    include: { itens: true }
+                    include: { itens: true, setor: true }
                 });
             });
 

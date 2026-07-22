@@ -18,8 +18,10 @@ model Setor {
   // Relação N:N (Muitos para Muitos) - O Prisma resolve a tabela intermediária sozinho!
   usuarios Usuario[]
 
-  // Novos campos para vincular itens/ferramentas a setores específicos
-  ferramentas Ferramenta[]
+  // Vínculos com ferramentas, bens permanentes e requisições
+  ferramentas        Ferramenta[]
+  bensPermanentes    BemPermanente[]
+  requisicoesConsumo RequisicaoConsumo[]
 }
 
 model Usuario {
@@ -39,8 +41,9 @@ model Usuario {
   isSistema Boolean @default(true) // Se for false, é um funcionário que só recebe coisas, não acessa o sistema.
 
   // O que esse usuário fez?
-  emprestimos        Emprestimo[]
-  requisicoesConsumo RequisicaoConsumo[]
+  emprestimos                Emprestimo[]
+  requisicoesConsumo         RequisicaoConsumo[]
+  bensPermanentesRegistrados BemPermanente[]     @relation("BensRegistrados")
 }
 
 // ==========================================
@@ -71,7 +74,7 @@ model Emprestimo {
   dataDevolucao DateTime?
   status        String    @default("PENDENTE")
 
-  quantidade Int @default(1) // <--- NOVA LINHA AQUI
+  quantidade Int @default(1)
 
   usuarioId    Int
   usuario      Usuario    @relation(fields: [usuarioId], references: [id])
@@ -86,9 +89,12 @@ model Emprestimo {
 model RequisicaoConsumo {
   id                  Int      @id @default(autoincrement())
   dataRegistro        DateTime @default(now())
-  departamentoDestino String
-  mesReferencia       String // ex: MARÇO/2026
+  departamentoDestino String   // Mantido para compatibilidade total com relatórios legados
+  mesReferencia       String   // ex: MARÇO/2026
   valorTotal          Float    @default(0)
+
+  setorId Int?
+  setor   Setor? @relation(fields: [setorId], references: [id])
 
   usuarioId Int
   usuario   Usuario @relation(fields: [usuarioId], references: [id])
@@ -105,4 +111,22 @@ model ItemRequisicaoConsumo {
   quantidade       Float
   valorUnitario    Float
   subtotal         Float
+}
+
+// ==========================================
+// MÓDULO BENS PERMANENTES (PATRIMÔNIO FIXO)
+// ==========================================
+
+model BemPermanente {
+  id                Int      @id @default(autoincrement())
+  numeroPatrimonio  String   @unique
+  descricao         String
+  dataEntrada       DateTime @default(now())
+  status            String   @default("ATIVO")
+
+  setorId           Int
+  setor             Setor    @relation(fields: [setorId], references: [id])
+
+  usuarioRegistroId Int
+  usuarioRegistro   Usuario  @relation("BensRegistrados", fields: [usuarioRegistroId], references: [id])
 }
