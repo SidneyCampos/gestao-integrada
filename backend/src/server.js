@@ -5,6 +5,8 @@
  * @module Server
  */
 
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path'); // Ferramenta nativa do Node para ler pastas
