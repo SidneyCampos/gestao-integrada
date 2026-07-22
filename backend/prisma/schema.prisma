@@ -51,7 +51,7 @@ model Usuario {
 model Ferramenta {
   id               Int     @id @default(autoincrement())
   nome             String
-  codigoPatrimonio String? @unique // Caso a ferramenta tenha um código na plaquinha
+  codigoPatrimonio String? // Caso a ferramenta tenha um código na plaquinha
   quantidadeTotal  Int
   qtdDisponivel    Int
 

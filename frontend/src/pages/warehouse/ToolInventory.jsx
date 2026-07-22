@@ -104,7 +104,7 @@ export default function ToolInventory() {
     try {
       setCarregando(true);
       // Busca ferramentas, usuários e empréstimos!
-      const resFerramentas = await api.get("/almoxarifado/ferramentas?excluirCategoria=INFORMÁTICA");
+      const resFerramentas = await api.get("/almoxarifado/ferramentas", { params: { excluirCategoria: "INFORMÁTICA" } });
       const resUsuarios = await api.get("/core/usuarios");
       const resFuncionarios = await api.get("/almoxarifado/funcionarios");
       const resEmprestimos = await api.get("/almoxarifado/emprestimos");
