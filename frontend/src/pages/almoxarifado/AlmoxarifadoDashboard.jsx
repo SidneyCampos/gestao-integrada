@@ -5,7 +5,7 @@
  * @module Frontend/Pages/Almoxarifado/Dashboard
  */
 
-import { Wrench, Shield, Droplets } from "lucide-react";
+import { Wrench, Shield, Droplets, Archive } from "lucide-react";
 import ModuleDashboard from "../../components/ModuleDashboard";
 
 export default function AlmoxarifadoDashboard() {
@@ -27,6 +27,14 @@ export default function AlmoxarifadoDashboard() {
       disponivel: true,
     },
     {
+      titulo: "Bens Permanentes",
+      descricao: "Controle de entrada e alocação de patrimônio físico.",
+      icone: Archive,
+      cor: "bg-violet-600",
+      link: "/almoxarifado/bens-permanentes",
+      disponivel: true,
+    },
+    {
       titulo: "Controle de EPIs",
       descricao: "Distribuição e cautela de equipamentos de proteção.",
       icone: Shield,
@@ -34,7 +42,6 @@ export default function AlmoxarifadoDashboard() {
       link: "#",
       disponivel: false,
     },
-
   ];
 
   return (
@@ -44,3 +51,4 @@ export default function AlmoxarifadoDashboard() {
     />
   );
 }
+
