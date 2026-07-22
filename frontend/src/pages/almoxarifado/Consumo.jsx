@@ -1,19 +1,21 @@
 /**
  * @file Consumo.jsx
- * @description Módulo de Materiais de Consumo com expansão de detalhes e layout mobile otimizado.
+ * @description Módulo de Materiais de Consumo com lançamentos por setor e expansão de detalhes.
+ * O campo departamentoDestino é alimentado pelo nome do setor selecionado dinamicamente,
+ * mantendo compatibilidade total com os relatórios legados.
  * @module Frontend/Pages/Almoxarifado/Consumo
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    ShoppingBag, 
-    ArrowLeft, 
-    Plus, 
-    Trash2, 
-    Save, 
-    Search, 
-    Calendar, 
-    Building2, 
+import {
+    ShoppingBag,
+    ArrowLeft,
+    Plus,
+    Trash2,
+    Save,
+    Search,
+    Calendar,
+    Building2,
     DollarSign,
     ChevronDown,
     X,
@@ -23,7 +25,7 @@ import {
     ChevronUp,
     Info,
     AlertCircle,
-    MoreHorizontal
+    Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
@@ -31,24 +33,26 @@ import Modal from '../../components/Modal';
 
 export default function Consumo({ usuarioLogado }) {
     const navigate = useNavigate();
-    
-    // Estados da Lista
+
+    // --- Estados da Lista ---
     const [requisicoes, setRequisicoes] = useState([]);
     const [setores, setSetores] = useState([]);
     const [carregando, setCarregando] = useState(true);
-    const [filtroDepto, setFiltroDepto] = useState("");
-    const [filtroMes, setFiltroMes] = useState("");
+    const [carregandoSetores, setCarregandoSetores] = useState(true);
+    const [filtroDepto, setFiltroDepto] = useState('');
+    const [filtroMes, setFiltroMes] = useState('');
     const [expandidoId, setExpandidoId] = useState(null);
 
-    // Estados do Modal
+    // --- Estados do Modal ---
     const [modalAberto, setModalAberto] = useState(false);
     const [salvando, setSalvando] = useState(false);
     const [editandoId, setEditandoId] = useState(null);
-    
+
     const [novaRequisicao, setNovaRequisicao] = useState({
-        departamentoDestino: "",
-        mesReferencia: "",
-        itens: [{ id: Date.now(), descricaoProduto: "", quantidade: 1, valorUnitario: 0 }]
+        departamentoDestino: '',
+        setorId: '',
+        mesReferencia: '',
+        itens: [{ id: Date.now(), descricaoProduto: '', quantidade: 1, valorUnitario: 0 }]
     });
 
     const mesesDisponiveis = useMemo(() => {
@@ -76,7 +80,7 @@ export default function Consumo({ usuarioLogado }) {
             const res = await api.get('/almoxarifado/consumo');
             setRequisicoes(res.data);
         } catch (erro) {
-            console.error("Erro ao buscar consumos:", erro);
+            console.error('[CONSUMO] Erro ao buscar consumos:', erro);
         } finally {
             setCarregando(false);
         }
@@ -84,11 +88,25 @@ export default function Consumo({ usuarioLogado }) {
 
     const buscarSetores = async () => {
         try {
+            setCarregandoSetores(true);
             const res = await api.get('/core/setores');
             setSetores(res.data);
         } catch (erro) {
-            console.error("Erro ao buscar setores:", erro);
+            console.error('[CONSUMO] Erro ao buscar setores:', erro);
+        } finally {
+            setCarregandoSetores(false);
         }
+    };
+
+    // --- Handlers do Setor: garante que departamentoDestino recebe o nome e setorId recebe o id ---
+    const handleSetorChange = (e) => {
+        const setorId = e.target.value;
+        const setorSelecionado = setores.find(s => String(s.id) === String(setorId));
+        setNovaRequisicao(p => ({
+            ...p,
+            setorId: setorId,
+            departamentoDestino: setorSelecionado ? setorSelecionado.nome : ''
+        }));
     };
 
     // --- AÇÕES ---
@@ -96,9 +114,10 @@ export default function Consumo({ usuarioLogado }) {
     const handleAbrirNovo = () => {
         setEditandoId(null);
         setNovaRequisicao({
-            departamentoDestino: "",
-            mesReferencia: mesesDisponiveis[6], 
-            itens: [{ id: Date.now(), descricaoProduto: "", quantidade: 1, valorUnitario: 0 }]
+            departamentoDestino: '',
+            setorId: '',
+            mesReferencia: mesesDisponiveis[6],
+            itens: [{ id: Date.now(), descricaoProduto: '', quantidade: 1, valorUnitario: 0 }]
         });
         setModalAberto(true);
     };
@@ -106,8 +125,11 @@ export default function Consumo({ usuarioLogado }) {
     const handleAbrirEdicao = (e, req) => {
         e.stopPropagation();
         setEditandoId(req.id);
+        // Tenta recuperar o setorId a partir do setor relacionado (se vier no response)
+        const setorId = req.setor?.id || req.setorId || '';
         setNovaRequisicao({
             departamentoDestino: req.departamentoDestino,
+            setorId: String(setorId),
             mesReferencia: req.mesReferencia,
             itens: req.itens.map(it => ({ ...it, id: it.id || Math.random() }))
         });
@@ -116,32 +138,40 @@ export default function Consumo({ usuarioLogado }) {
 
     const handleDeletar = async (e, id) => {
         e.stopPropagation();
-        if (!window.confirm("Deseja realmente excluir este lançamento?")) return;
+        if (!window.confirm('Deseja realmente excluir este lançamento?')) return;
         try {
             await api.delete(`/almoxarifado/consumo/${id}`);
             buscarDados();
         } catch (erro) {
-            alert("Erro ao excluir lançamento.");
+            alert('Erro ao excluir lançamento.');
         }
     };
 
     const handleSalvar = async () => {
-        if (!novaRequisicao.departamentoDestino) return alert("Escolha o departamento.");
-        if (novaRequisicao.itens.some(i => !i.descricaoProduto)) return alert("Preencha as descrições.");
+        if (!novaRequisicao.departamentoDestino) return alert('Escolha o departamento destino.');
+        if (novaRequisicao.itens.some(i => !i.descricaoProduto)) return alert('Preencha as descrições de todos os materiais.');
 
         if (!editandoId) {
-            const jaExiste = requisicoes.find(r => 
-                r.departamentoDestino === novaRequisicao.departamentoDestino && 
+            const jaExiste = requisicoes.find(r =>
+                r.departamentoDestino === novaRequisicao.departamentoDestino &&
                 r.mesReferencia === novaRequisicao.mesReferencia
             );
             if (jaExiste) {
-                return alert(`Já existe um registro para "${novaRequisicao.departamentoDestino}" em "${novaRequisicao.mesReferencia}".`);
+                return alert(`Já existe um registro para "${novaRequisicao.departamentoDestino}" em "${novaRequisicao.mesReferencia}". Edite o registro existente.`);
             }
         }
 
         try {
             setSalvando(true);
-            const payload = { ...novaRequisicao, usuarioId: usuarioLogado.id };
+            // O payload envia tanto departamentoDestino (legado/relatórios) quanto setorId (padronização nova)
+            const payload = {
+                departamentoDestino: novaRequisicao.departamentoDestino,
+                setorId: novaRequisicao.setorId || null,
+                mesReferencia: novaRequisicao.mesReferencia,
+                itens: novaRequisicao.itens,
+                usuarioId: usuarioLogado.id
+            };
+
             if (editandoId) {
                 await api.put(`/almoxarifado/consumo/${editandoId}`, payload);
             } else {
@@ -150,7 +180,7 @@ export default function Consumo({ usuarioLogado }) {
             setModalAberto(false);
             buscarDados();
         } catch (erro) {
-            alert(erro.response?.data?.erro || "Erro ao salvar.");
+            alert(erro.response?.data?.erro || 'Erro ao salvar.');
         } finally {
             setSalvando(false);
         }
@@ -160,19 +190,41 @@ export default function Consumo({ usuarioLogado }) {
         setExpandidoId(expandidoId === id ? null : id);
     };
 
-    const addLinha = () => setNovaRequisicao(p => ({ ...p, itens: [...p.itens, { id: Date.now(), descricaoProduto: "", quantidade: 1, valorUnitario: 0 }] }));
-    const removerLinha = (id) => novaRequisicao.itens.length > 1 && setNovaRequisicao(p => ({ ...p, itens: p.itens.filter(i => i.id !== id) }));
-    const updateItem = (id, campo, valor) => setNovaRequisicao(p => ({ ...p, itens: p.itens.map(i => i.id === id ? { ...i, [campo]: valor } : i) }));
-    const custoTotalModal = useMemo(() => novaRequisicao.itens.reduce((acc, i) => acc + (parseFloat(i.quantidade || 0) * parseFloat(i.valorUnitario || 0)), 0), [novaRequisicao.itens]);
+    const addLinha = () => setNovaRequisicao(p => ({
+        ...p,
+        itens: [...p.itens, { id: Date.now(), descricaoProduto: '', quantidade: 1, valorUnitario: 0 }]
+    }));
 
-    const requisicoesFiltradas = requisicoes.filter(r => r.departamentoDestino.toLowerCase().includes(filtroDepto.toLowerCase()) && (filtroMes === "" || r.mesReferencia === filtroMes));
+    const removerLinha = (id) => {
+        if (novaRequisicao.itens.length <= 1) return;
+        setNovaRequisicao(p => ({ ...p, itens: p.itens.filter(i => i.id !== id) }));
+    };
+
+    const updateItem = (id, campo, valor) => setNovaRequisicao(p => ({
+        ...p,
+        itens: p.itens.map(i => i.id === id ? { ...i, [campo]: valor } : i)
+    }));
+
+    const custoTotalModal = useMemo(() =>
+        novaRequisicao.itens.reduce((acc, i) =>
+            acc + (parseFloat(i.quantidade || 0) * parseFloat(i.valorUnitario || 0)), 0
+        ), [novaRequisicao.itens]);
+
+    const requisicoesFiltradas = requisicoes.filter(r =>
+        r.departamentoDestino.toLowerCase().includes(filtroDepto.toLowerCase()) &&
+        (filtroMes === '' || r.mesReferencia === filtroMes)
+    );
 
     return (
         <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
+
             {/* HEADER */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                 <div>
-                    <button onClick={() => navigate('/almoxarifado')} className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors mb-2 text-xs font-bold uppercase tracking-wider">
+                    <button
+                        onClick={() => navigate('/almoxarifado')}
+                        className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors mb-2 text-xs font-bold uppercase tracking-wider"
+                    >
                         <ArrowLeft className="w-3 h-3" /> Dashboard
                     </button>
                     <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
@@ -183,20 +235,34 @@ export default function Consumo({ usuarioLogado }) {
                     </h1>
                 </div>
 
-                <button onClick={handleAbrirNovo} className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 group">
-                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" /> Novo Lançamento
+                <button
+                    onClick={handleAbrirNovo}
+                    className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 group"
+                >
+                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                    Novo Lançamento
                 </button>
             </div>
 
             {/* FILTROS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="relative">
                     <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="text" placeholder="Filtrar Departamento..." value={filtroDepto} onChange={(e) => setFiltroDepto(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+                    <input
+                        type="text"
+                        placeholder="Filtrar Departamento..."
+                        value={filtroDepto}
+                        onChange={(e) => setFiltroDepto(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none"
+                    />
                 </div>
                 <div className="relative">
                     <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <select value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none appearance-none">
+                    <select
+                        value={filtroMes}
+                        onChange={(e) => setFiltroMes(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none appearance-none"
+                    >
                         <option value="">Todos os Meses</option>
                         {mesesDisponiveis.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
@@ -206,9 +272,11 @@ export default function Consumo({ usuarioLogado }) {
             {/* LISTAGEM */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 {carregando ? (
-                    <div className="p-20 text-center text-slate-400 animate-pulse font-medium text-sm">Carregando...</div>
+                    <div className="p-20 text-center text-slate-400 animate-pulse font-medium text-sm flex items-center justify-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" /> Carregando...
+                    </div>
                 ) : requisicoesFiltradas.length === 0 ? (
-                    <div className="p-20 text-center text-slate-400 italic text-sm">Nenhum registro.</div>
+                    <div className="p-20 text-center text-slate-400 italic text-sm">Nenhum registro encontrado.</div>
                 ) : (
                     <table className="w-full text-left border-collapse block lg:table">
                         <thead className="hidden lg:table-header-group">
@@ -227,16 +295,16 @@ export default function Consumo({ usuarioLogado }) {
                                 const isExpandido = expandidoId === req.id;
                                 return (
                                     <React.Fragment key={req.id}>
-                                        <tr 
-                                            onClick={() => toggleExpandir(req.id)} 
-                                            className={`cursor-pointer transition-all block lg:table-row hover:bg-slate-50 ${isExpandido ? "bg-blue-50/40" : ""}`}
+                                        <tr
+                                            onClick={() => toggleExpandir(req.id)}
+                                            className={`cursor-pointer transition-all block lg:table-row hover:bg-slate-50 ${isExpandido ? 'bg-blue-50/40' : ''}`}
                                         >
                                             {/* MOBILE VIEW (CARD COMPACTO) */}
                                             <td className="lg:hidden p-4 block">
                                                 <div className="flex flex-col gap-2">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-[10px] font-mono text-slate-400">
-                                                            {new Date(req.dataRegistro).toLocaleDateString()}
+                                                            {new Date(req.dataRegistro).toLocaleDateString('pt-BR')}
                                                         </span>
                                                         <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-black uppercase tracking-tighter">
                                                             {req.mesReferencia}
@@ -255,9 +323,16 @@ export default function Consumo({ usuarioLogado }) {
                                                             <Info className="w-3 h-3" /> {req.itens.length} materiais
                                                         </span>
                                                         <div className="flex gap-4">
-                                                            <button onClick={(e) => handleAbrirEdicao(e, req)} className="text-slate-400 hover:text-blue-600"><Edit3 className="w-4 h-4" /></button>
-                                                            <button onClick={(e) => handleDeletar(e, req.id)} className="text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-                                                            {isExpandido ? <ChevronUp className="w-4 h-4 text-blue-600" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
+                                                            <button onClick={(e) => handleAbrirEdicao(e, req)} className="text-slate-400 hover:text-blue-600">
+                                                                <Edit3 className="w-4 h-4" />
+                                                            </button>
+                                                            <button onClick={(e) => handleDeletar(e, req.id)} className="text-slate-400 hover:text-red-600">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                            {isExpandido
+                                                                ? <ChevronUp className="w-4 h-4 text-blue-600" />
+                                                                : <ChevronDown className="w-4 h-4 text-slate-300" />
+                                                            }
                                                         </div>
                                                     </div>
                                                 </div>
@@ -265,16 +340,21 @@ export default function Consumo({ usuarioLogado }) {
 
                                             {/* DESKTOP VIEW */}
                                             <td className="px-6 py-3 hidden lg:table-cell text-center">
-                                                {isExpandido ? <ChevronUp className="w-4 h-4 text-blue-600 mx-auto" /> : <ChevronDown className="w-4 h-4 text-slate-300 mx-auto" />}
+                                                {isExpandido
+                                                    ? <ChevronUp className="w-4 h-4 text-blue-600 mx-auto" />
+                                                    : <ChevronDown className="w-4 h-4 text-slate-300 mx-auto" />
+                                                }
                                             </td>
                                             <td className="px-6 py-3 hidden lg:table-cell text-xs font-mono text-slate-500">
-                                                {new Date(req.dataRegistro).toLocaleDateString()}
+                                                {new Date(req.dataRegistro).toLocaleDateString('pt-BR')}
                                             </td>
                                             <td className="px-6 py-3 hidden lg:table-cell font-bold text-slate-800 uppercase text-xs">
                                                 {req.departamentoDestino}
                                             </td>
                                             <td className="px-6 py-3 hidden lg:table-cell">
-                                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-black">{req.mesReferencia}</span>
+                                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-black">
+                                                    {req.mesReferencia}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-3 hidden lg:table-cell text-xs font-semibold text-slate-500">
                                                 {req.itens.length} materiais
@@ -283,8 +363,12 @@ export default function Consumo({ usuarioLogado }) {
                                                 {req.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                             </td>
                                             <td className="px-6 py-3 hidden lg:table-cell text-right space-x-2">
-                                                <button onClick={(e) => handleAbrirEdicao(e, req)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit3 className="w-4 h-4" /></button>
-                                                <button onClick={(e) => handleDeletar(e, req.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                <button onClick={(e) => handleAbrirEdicao(e, req)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                    <Edit3 className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={(e) => handleDeletar(e, req.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </td>
                                         </tr>
 
@@ -301,7 +385,9 @@ export default function Consumo({ usuarioLogado }) {
                                                                 </div>
                                                                 <div className="text-right ml-4">
                                                                     <p className="text-[9px] font-black text-slate-400 uppercase leading-none mb-1">Subtotal</p>
-                                                                    <p className="text-xs font-black text-blue-600 whitespace-nowrap">{it.quantidade}x {it.valorUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                                                    <p className="text-xs font-black text-blue-600 whitespace-nowrap">
+                                                                        {it.quantidade}x {it.valorUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                                    </p>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -320,8 +406,14 @@ export default function Consumo({ usuarioLogado }) {
                 )}
             </div>
 
-            {/* MODAL PLANILHA */}
-            <Modal isOpen={modalAberto} onClose={() => setModalAberto(false)} title={editandoId ? "Editar Lançamento" : "Novo Lançamento"} variant="cyan" width="max-w-4xl">
+            {/* MODAL DE LANÇAMENTO */}
+            <Modal
+                isOpen={modalAberto}
+                onClose={() => setModalAberto(false)}
+                title={editandoId ? 'Editar Lançamento' : 'Novo Lançamento'}
+                variant="cyan"
+                width="max-w-4xl"
+            >
                 <div className="flex flex-col gap-6">
                     {!editandoId && (
                         <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center gap-3">
@@ -333,59 +425,137 @@ export default function Consumo({ usuarioLogado }) {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* SELECT DE SETOR — populado dinamicamente via API /core/setores */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase">Departamento de Destino</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase">
+                                Departamento de Destino
+                            </label>
                             <div className="relative">
-                                <select value={novaRequisicao.departamentoDestino} onChange={(e) => setNovaRequisicao(p => ({ ...p, departamentoDestino: e.target.value }))} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm appearance-none">
-                                    <option value="">Selecione...</option>
-                                    {setores.map(s => <option key={s.id} value={s.nome}>{s.nome}</option>)}
-                                </select>
-                                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                {carregandoSetores ? (
+                                    <div className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 text-sm text-slate-400">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Carregando setores...
+                                    </div>
+                                ) : (
+                                    <>
+                                        <select
+                                            value={novaRequisicao.setorId}
+                                            onChange={handleSetorChange}
+                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm appearance-none"
+                                        >
+                                            <option value="">Selecione o setor...</option>
+                                            {setores.map(s => (
+                                                <option key={s.id} value={s.id}>{s.nome}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                    </>
+                                )}
                             </div>
+                            {/* Exibe o nome que será salvo, para transparência */}
+                            {novaRequisicao.departamentoDestino && (
+                                <p className="text-[10px] text-cyan-600 font-bold pl-1">
+                                    ✓ Será registrado como: {novaRequisicao.departamentoDestino}
+                                </p>
+                            )}
                         </div>
+
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase">Mês de Referência</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase">
+                                Mês de Referência
+                            </label>
                             <div className="relative">
-                                <select value={novaRequisicao.mesReferencia} onChange={(e) => setNovaRequisicao(p => ({ ...p, mesReferencia: e.target.value }))} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm appearance-none">
-                                    {mesesDisponiveis.map(m => <option key={m} value={m}>{m}</option>)}
+                                <select
+                                    value={novaRequisicao.mesReferencia}
+                                    onChange={(e) => setNovaRequisicao(p => ({ ...p, mesReferencia: e.target.value }))}
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm appearance-none"
+                                >
+                                    {mesesDisponiveis.map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
                                 </select>
-                                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                             </div>
                         </div>
                     </div>
 
+                    {/* LISTA DE MATERIAIS */}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Materiais</label>
-                            <button onClick={addLinha} className="text-blue-600 hover:text-blue-700 text-xs font-black flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</button>
+                            <button onClick={addLinha} className="text-blue-600 hover:text-blue-700 text-xs font-black flex items-center gap-1">
+                                <Plus className="w-3 h-3" /> Adicionar
+                            </button>
                         </div>
 
                         <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                             {novaRequisicao.itens.map((item) => (
                                 <div key={item.id} className="flex flex-col sm:flex-row gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 items-center">
-                                    <input type="text" placeholder="Descrição" value={item.descricaoProduto} onChange={(e) => updateItem(item.id, 'descricaoProduto', e.target.value)} className="flex-1 bg-transparent border-none outline-none text-sm font-bold" />
-                                    <div className="flex gap-2 w-full sm:w-auto">
-                                        <input type="number" placeholder="Qtd" value={item.quantidade} onChange={(e) => updateItem(item.id, 'quantidade', e.target.value)} className="w-16 bg-white border border-slate-200 rounded-lg p-2 text-xs text-center font-bold" />
-                                        <div className="w-24 relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Descrição do material"
+                                        value={item.descricaoProduto}
+                                        onChange={(e) => updateItem(item.id, 'descricaoProduto', e.target.value)}
+                                        className="flex-1 bg-transparent border-none outline-none text-sm font-bold min-w-0"
+                                    />
+                                    <div className="flex gap-2 w-full sm:w-auto shrink-0">
+                                        <input
+                                            type="number"
+                                            placeholder="Qtd"
+                                            min="0"
+                                            value={item.quantidade}
+                                            onChange={(e) => updateItem(item.id, 'quantidade', e.target.value)}
+                                            className="w-16 bg-white border border-slate-200 rounded-lg p-2 text-xs text-center font-bold"
+                                        />
+                                        <div className="w-28 relative">
                                             <DollarSign className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-slate-300" />
-                                            <input type="number" placeholder="Unit." value={item.valorUnitario} onChange={(e) => updateItem(item.id, 'valorUnitario', e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg p-2 pl-5 text-xs font-bold" />
+                                            <input
+                                                type="number"
+                                                placeholder="Valor"
+                                                min="0"
+                                                step="0.01"
+                                                value={item.valorUnitario}
+                                                onChange={(e) => updateItem(item.id, 'valorUnitario', e.target.value)}
+                                                className="w-full bg-white border border-slate-200 rounded-lg p-2 pl-6 text-xs font-bold"
+                                            />
                                         </div>
-                                        <button onClick={() => removerLinha(item.id)} className="p-2 text-slate-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                        <button
+                                            onClick={() => removerLinha(item.id)}
+                                            disabled={novaRequisicao.itens.length <= 1}
+                                            className="p-2 text-slate-300 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </div>
 
+                    {/* RODAPÉ DO MODAL */}
                     <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                         <div className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-3">
                             <span className="text-[9px] font-black uppercase text-slate-400">Total</span>
-                            <span className="text-base font-black tracking-tighter">{custoTotalModal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            <span className="text-base font-black tracking-tighter">
+                                {custoTotalModal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </span>
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={() => setModalAberto(false)} className="px-4 py-2 text-sm font-bold text-slate-500">Cancelar</button>
-                            <button onClick={handleSalvar} disabled={salvando} className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-xl font-black text-sm flex items-center gap-2 shadow-lg disabled:opacity-50 transition-all active:scale-95">
-                                {salvando ? "Salvando..." : "Finalizar"}
+                            <button
+                                onClick={() => setModalAberto(false)}
+                                className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSalvar}
+                                disabled={salvando || !novaRequisicao.departamentoDestino}
+                                className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-xl font-black text-sm flex items-center gap-2 shadow-lg disabled:opacity-50 transition-all active:scale-95"
+                            >
+                                {salvando
+                                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</>
+                                    : 'Finalizar'
+                                }
                             </button>
                         </div>
                     </div>
