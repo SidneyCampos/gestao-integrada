@@ -68,32 +68,79 @@ export default function Relatorios({ usuarioLogado }) {
         }
     };
 
+    const logoSetor = useMemo(() => {
+        const setorFiltro = (filtros.setor || '').toUpperCase();
+        
+        if (setorFiltro.includes('CIVIL') || setorFiltro.includes('PC')) {
+            return { path: '/logo-pc.png', nome: 'POLÍCIA CIVIL' };
+        }
+        if (setorFiltro.includes('MILITAR') || setorFiltro.includes('PM')) {
+            return { path: '/logo-pm.png', nome: 'POLÍCIA MILITAR' };
+        }
+
+        if (abaAtiva === 'consumo' && dadosConsumo?.registros?.length > 0) {
+            const depts = Array.from(new Set(dadosConsumo.registros.map(r => (r.departamentoDestino || '').toUpperCase())));
+            if (depts.length === 1) {
+                if (depts[0].includes('CIVIL')) return { path: '/logo-pc.png', nome: 'POLÍCIA CIVIL' };
+                if (depts[0].includes('MILITAR')) return { path: '/logo-pm.png', nome: 'POLÍCIA MILITAR' };
+            }
+        }
+
+        return null;
+    }, [filtros.setor, abaAtiva, dadosConsumo]);
+
     const handlePrint = () => window.print();
 
     return (
         <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
             
             {/* ================= CABEÇALHO OFICIAL (APARECE APENAS NO PDF/PRINT) ================= */}
-            <div className="hidden print:flex flex-col items-center text-center mb-10 border-b-2 border-slate-900 pb-6">
-                <div className="flex items-center gap-4 mb-4">
-                     {/* Logo Placeholder - No PDF Real usaríamos a imagem do sistema */}
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center border border-slate-300">
-                        <img src="/logo-completo.png" alt="Logo" className="w-12 h-12 object-contain" />
+            <div className="hidden print:flex flex-col mb-8 pb-6 border-b-2 border-slate-900">
+                <div className="flex items-center justify-between gap-4 mb-4">
+                    {/* Logo Prefeitura */}
+                    <div className="w-48 flex items-center justify-start">
+                        <img src="/logo-completo.png" alt="Prefeitura Municipal de Iguatama" className="h-16 w-auto object-contain" />
                     </div>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-black text-slate-900 uppercase">Prefeitura Municipal de Iguatama</h1>
-                        <p className="text-sm font-bold text-slate-600 uppercase tracking-widest">Estado de Minas Gerais</p>
+
+                    {/* Títulos Centrais */}
+                    <div className="flex-1 text-center">
+                        <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                            Prefeitura Municipal de Iguatama
+                        </h1>
+                        <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mt-0.5">
+                            Estado de Minas Gerais
+                        </p>
+                        {logoSetor && (
+                            <div className="mt-1">
+                                <span className="text-[10px] font-black text-slate-800 uppercase tracking-wider bg-slate-100 py-0.5 px-3 rounded-full border border-slate-300">
+                                    {logoSetor.nome}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Logo Específico (Polícia Civil / Militar) ou Emblema */}
+                    <div className="w-48 flex items-center justify-end">
+                        {logoSetor ? (
+                            <img src={logoSetor.path} alt={logoSetor.nome} className="h-16 w-auto object-contain max-w-[150px]" />
+                        ) : (
+                            <img src="/logo-circular.png" alt="Emblema Municipal" className="h-14 w-auto object-contain" />
+                        )}
                     </div>
                 </div>
-                <div className="w-full bg-slate-900 text-white py-2 rounded-lg mt-2">
-                    <h2 className="text-lg font-black uppercase tracking-widest">
-                        Relatório: {abaAtiva === 'consumo' ? 'Materiais de Consumo' : abaAtiva === 'ti' ? 'Inventário de TI' : 'Gestão de Patrimônio e Ferramentas'}
+
+                {/* Banner do Nome do Relatório */}
+                <div className="w-full bg-slate-900 text-white py-2 px-4 rounded-lg text-center shadow-sm">
+                    <h2 className="text-sm font-black uppercase tracking-widest">
+                        RELATÓRIO: {abaAtiva === 'consumo' ? 'MATERIAIS DE CONSUMO' : abaAtiva === 'ti' ? 'INVENTÁRIO DE TI' : 'GESTÃO DE PATRIMÔNIO E FERRAMENTAS'}
                     </h2>
                 </div>
-                <div className="mt-4 flex justify-between w-full text-[10px] font-bold text-slate-500 uppercase">
-                    <span>Período: {new Date(filtros.dataInicio).toLocaleDateString()} até {new Date(filtros.dataFim).toLocaleDateString()}</span>
-                    <span>Emitido por: {usuarioLogado?.nome}</span>
-                    <span>Extraído em: {new Date().toLocaleString()}</span>
+
+                {/* Barra de Informações do Documento */}
+                <div className="mt-3 flex items-center justify-between bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-[10px] font-bold text-slate-700 uppercase">
+                    <div><span className="text-slate-400 font-normal">PERÍODO:</span> {new Date(filtros.dataInicio).toLocaleDateString('pt-BR')} até {new Date(filtros.dataFim).toLocaleDateString('pt-BR')}</div>
+                    <div><span className="text-slate-400 font-normal">EMITIDO POR:</span> {usuarioLogado?.nome || 'ADMINISTRADOR'}</div>
+                    <div><span className="text-slate-400 font-normal">EXTRAÍDO EM:</span> {new Date().toLocaleString('pt-BR')}</div>
                 </div>
             </div>
 
@@ -339,18 +386,14 @@ export default function Relatorios({ usuarioLogado }) {
             </div>
 
             {/* RODAPÉ OFICIAL (APARECE APENAS NO PDF) */}
-            <div className="hidden print:flex flex-col items-center mt-20 pt-10 border-t border-slate-200 gap-12">
-                <div className="flex justify-around w-full">
+            <div className="hidden print:flex flex-col items-center mt-16 pt-8 border-t border-slate-300 gap-8 print:break-inside-avoid">
+                <div className="flex justify-center w-full">
                     <div className="flex flex-col items-center gap-2">
-                        <div className="w-48 border-t border-slate-900"></div>
-                        <p className="text-[10px] font-black uppercase">Responsável pelo Almoxarifado</p>
-                    </div>
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="w-48 border-t border-slate-900"></div>
-                        <p className="text-[10px] font-black uppercase">Secretaria de Administração</p>
+                        <div className="w-64 border-t-2 border-slate-900"></div>
+                        <p className="text-[11px] font-black uppercase text-slate-900 tracking-wider">Responsável pelo Almoxarifado</p>
                     </div>
                 </div>
-                <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest text-center">
+                <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center">
                     Documento Gerado Eletronicamente pelo Sistema de Gestão Integrada - Iguatama/MG
                 </div>
             </div>
