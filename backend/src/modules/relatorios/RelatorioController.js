@@ -154,6 +154,46 @@ class RelatorioController {
             return res.status(500).json({ erro: "Erro ao gerar relatório do TI." });
         }
     }
+    /**
+     * Gera relatório completo de Bens Permanentes (patrimônio físico).
+     */
+    static async bensPermanentes(req, res) {
+        try {
+            const { setorId, status, dataInicio, dataFim } = req.query;
+
+            const where = {};
+            if (setorId)  where.setorId  = parseInt(setorId);
+            if (status)   where.status   = status;
+            if (dataInicio && dataFim) {
+                const dFim = new Date(dataFim);
+                dFim.setUTCHours(23, 59, 59, 999);
+                where.dataEntrada = { gte: new Date(dataInicio), lte: dFim };
+            }
+
+            const bens = await prisma.bemPermanente.findMany({
+                where,
+                include: {
+                    setor: { select: { id: true, nome: true } },
+                    usuarioRegistro: { select: { nome: true } }
+                },
+                orderBy: { dataEntrada: 'desc' }
+            });
+
+            const totalBens     = bens.length;
+            const totalAdquiridos = bens.filter(b => b.origem === 'ADQUIRIDO').length;
+            const totalDoacoes    = bens.filter(b => b.origem === 'DOACAO').length;
+            const valorTotal      = bens.reduce((acc, b) => acc + (b.valorBem || 0), 0);
+            const totalAtivos     = bens.filter(b => b.status === 'ATIVO').length;
+
+            return res.status(200).json({
+                resumo: { totalBens, totalAdquiridos, totalDoacoes, valorTotal, totalAtivos },
+                registros: bens
+            });
+        } catch (erro) {
+            console.error("[RELATORIO_BENS_ERROR]", erro);
+            return res.status(500).json({ erro: "Erro ao gerar relatório de bens permanentes." });
+        }
+    }
 }
 
 module.exports = RelatorioController;

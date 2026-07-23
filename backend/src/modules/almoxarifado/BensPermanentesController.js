@@ -37,7 +37,7 @@ class BensPermanentesController {
      */
     static async criar(req, res) {
         try {
-            const { numeroPatrimonio, descricao, setorId, dataEntrada, status, origem } = req.body;
+            const { numeroPatrimonio, descricao, setorId, dataEntrada, status, origem, doador, valorBem } = req.body;
 
             if (!numeroPatrimonio || !descricao || !setorId) {
                 return res.status(400).json({ 
@@ -80,6 +80,8 @@ class BensPermanentesController {
                     usuarioRegistroId: parseInt(usuarioRegistroId),
                     status: status || "ATIVO",
                     origem: origem || "ADQUIRIDO",
+                    doador: origem === "DOACAO" ? (doador?.trim() || null) : null,
+                    valorBem: valorBem ? parseFloat(valorBem) : null,
                     dataEntrada: dataEntrada ? new Date(dataEntrada) : undefined
                 },
                 include: {
@@ -103,7 +105,7 @@ class BensPermanentesController {
     static async atualizar(req, res) {
         try {
             const { id } = req.params;
-            const { numeroPatrimonio, descricao, setorId, status, origem } = req.body;
+            const { numeroPatrimonio, descricao, setorId, status, origem, doador, valorBem } = req.body;
 
             const bemAtual = await prisma.bemPermanente.findUnique({
                 where: { id: parseInt(id) }
@@ -133,7 +135,9 @@ class BensPermanentesController {
                     descricao: descricao || undefined,
                     setorId: setorId ? parseInt(setorId) : undefined,
                     status: status || undefined,
-                    origem: origem || undefined
+                    origem: origem || undefined,
+                    doador: origem === "DOACAO" ? (doador?.trim() || null) : null,
+                    valorBem: valorBem !== undefined ? (valorBem ? parseFloat(valorBem) : null) : undefined
                 },
                 include: {
                     setor: true,

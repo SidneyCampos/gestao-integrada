@@ -17,7 +17,10 @@ import {
     Filter,
     History,
     CheckCircle2,
-    Cpu
+    Cpu,
+    Archive,
+    Heart,
+    ShoppingCart
 } from 'lucide-react';
 import api from '../api/api';
 import { hasPermission } from '../utils/auth';
@@ -28,11 +31,14 @@ export default function Relatorios({ usuarioLogado }) {
     const [dadosConsumo, setDadosConsumo] = useState(null);
     const [dadosFerramentas, setDadosFerramentas] = useState(null);
     const [dadosTI, setDadosTI] = useState(null);
+    const [dadosBens, setDadosBens] = useState(null);
     const [setores, setSetores] = useState([]);
     const [filtros, setFiltros] = useState({
         dataInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
         dataFim: new Date().toISOString().split('T')[0],
-        setor: ""
+        setor: "",
+        setorId: "",
+        status: ""
     });
 
     useEffect(() => {
@@ -51,7 +57,7 @@ export default function Relatorios({ usuarioLogado }) {
         try {
             setCarregando(true);
             if (abaAtiva === "consumo") {
-                const query = new URLSearchParams(filtros).toString();
+                const query = new URLSearchParams({ dataInicio: filtros.dataInicio, dataFim: filtros.dataFim, setor: filtros.setor }).toString();
                 const res = await api.get(`/relatorios/consumo?${query}`);
                 setDadosConsumo(res.data);
             } else if (abaAtiva === "ferramentas") {
@@ -60,6 +66,14 @@ export default function Relatorios({ usuarioLogado }) {
             } else if (abaAtiva === "ti") {
                 const res = await api.get('/relatorios/ti');
                 setDadosTI(res.data);
+            } else if (abaAtiva === "bens") {
+                const params = new URLSearchParams();
+                if (filtros.setorId) params.set('setorId', filtros.setorId);
+                if (filtros.status)  params.set('status',  filtros.status);
+                params.set('dataInicio', filtros.dataInicio);
+                params.set('dataFim',    filtros.dataFim);
+                const res = await api.get(`/relatorios/bens-permanentes?${params.toString()}`);
+                setDadosBens(res.data);
             }
         } catch (erro) {
             console.error(erro);
@@ -170,6 +184,10 @@ export default function Relatorios({ usuarioLogado }) {
                         <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
                         <span className="hidden sm:inline">Ferramentas / </span>Patrimônio
                     </button>
+                    <button onClick={() => setAbaAtiva("bens")} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] sm:text-sm font-bold rounded-lg transition-all ${abaAtiva === "bens" ? "bg-white text-violet-600 shadow-md" : "text-slate-500 hover:text-slate-700"}`}>
+                        <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+                        <span className="hidden sm:inline">Bens </span>Permanentes
+                    </button>
                     {hasPermission(usuarioLogado, "TI") && (
                         <button onClick={() => setAbaAtiva("ti")} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] sm:text-sm font-bold rounded-lg transition-all ${abaAtiva === "ti" ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"}`}>
                             <Cpu className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
@@ -197,6 +215,27 @@ export default function Relatorios({ usuarioLogado }) {
                                 </select>
                             </div>
                         )}
+                        {abaAtiva === "bens" && (
+                            <>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Setor</label>
+                                    <select value={filtros.setorId} onChange={(e) => setFiltros({...filtros, setorId: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                                        <option value="">Todos</option>
+                                        {setores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Status</label>
+                                    <select value={filtros.status} onChange={(e) => setFiltros({...filtros, status: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                                        <option value="">Todos</option>
+                                        <option value="ATIVO">Ativo</option>
+                                        <option value="INATIVO">Inativo</option>
+                                        <option value="MANUTENÇÃO">Manutenção</option>
+                                        <option value="BAIXADO">Baixado</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
                         <button onClick={carregarRelatorio} disabled={carregando} className="bg-slate-900 text-white py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">
                             {carregando ? "Processando..." : <><TrendingUp className="w-4 h-4" /> Analisar Dados</>}
                         </button>
@@ -219,6 +258,31 @@ export default function Relatorios({ usuarioLogado }) {
                         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Requisições</p>
                             <h2 className="text-3xl font-black text-slate-900 tracking-tighter">{dadosConsumo.resumo.quantidadeRequisicoes}</h2>
+                        </div>
+                    </div>
+                )}
+
+                {abaAtiva === "bens" && dadosBens && (
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8 animate-in fade-in slide-in-from-top-4">
+                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total de Bens</p>
+                            <h2 className="text-2xl font-black text-slate-900">{dadosBens.resumo.totalBens}</h2>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ativos</p>
+                            <h2 className="text-2xl font-black text-emerald-600">{dadosBens.resumo.totalAtivos}</h2>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Adquiridos</p>
+                            <h2 className="text-2xl font-black text-blue-600">{dadosBens.resumo.totalAdquiridos}</h2>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl border border-pink-100 shadow-sm">
+                            <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-1">Doações</p>
+                            <h2 className="text-2xl font-black text-pink-600">{dadosBens.resumo.totalDoacoes}</h2>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Valor Total</p>
+                            <h2 className="text-lg font-black text-slate-900 leading-tight">{dadosBens.resumo.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</h2>
                         </div>
                     </div>
                 )}
@@ -272,6 +336,48 @@ export default function Relatorios({ usuarioLogado }) {
                                 <tr>
                                     <td colSpan="4" className="px-6 py-4 text-right border-r border-slate-700">Total Consolidado:</td>
                                     <td className="px-6 py-4 text-right">{dadosConsumo.resumo.totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                ) : abaAtiva === "bens" && dadosBens ? (
+                    <div className="print:block">
+                        <table className="w-full text-left border-collapse border border-slate-300">
+                            <thead>
+                                <tr className="bg-slate-100 print:bg-slate-200 border-b-2 border-slate-300 text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                                    <th className="px-4 py-3 border-r border-slate-300">Nº Patrimônio</th>
+                                    <th className="px-4 py-3 border-r border-slate-300">Descrição</th>
+                                    <th className="px-4 py-3 border-r border-slate-300">Setor</th>
+                                    <th className="px-4 py-3 border-r border-slate-300">Entrada</th>
+                                    <th className="px-4 py-3 border-r border-slate-300 text-center">Origem / Doador</th>
+                                    <th className="px-4 py-3 border-r border-slate-300 text-center">Status</th>
+                                    <th className="px-4 py-3 text-right">Valor (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                                {dadosBens.registros.map(bem => (
+                                    <tr key={bem.id} className="text-[11px] font-medium print:break-inside-avoid">
+                                        <td className="px-4 py-2.5 border-r border-slate-200 font-mono font-black text-violet-700">{bem.numeroPatrimonio}</td>
+                                        <td className="px-4 py-2.5 border-r border-slate-200 font-semibold">{bem.descricao}</td>
+                                        <td className="px-4 py-2.5 border-r border-slate-200 font-bold uppercase">{bem.setor?.nome || '—'}</td>
+                                        <td className="px-4 py-2.5 border-r border-slate-200 font-mono">{new Date(bem.dataEntrada).toLocaleDateString('pt-BR')}</td>
+                                        <td className="px-4 py-2.5 border-r border-slate-200 text-center">
+                                            {bem.origem === 'DOACAO'
+                                                ? <><span className="font-black text-pink-700">Doação</span>{bem.doador && <><br/><span className="text-[9px] text-slate-500">{bem.doador}</span></>}</>
+                                                : <span className="font-black text-blue-700">Adquirido</span>
+                                            }
+                                        </td>
+                                        <td className="px-4 py-2.5 border-r border-slate-200 text-center font-black uppercase">{bem.status}</td>
+                                        <td className="px-4 py-2.5 text-right font-black">
+                                            {bem.valorBem != null ? bem.valorBem.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot className="bg-slate-900 text-white font-black text-sm uppercase">
+                                <tr>
+                                    <td colSpan="6" className="px-4 py-3 text-right border-r border-slate-700">Valor Total Registrado:</td>
+                                    <td className="px-4 py-3 text-right">{dadosBens.resumo.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                 </tr>
                             </tfoot>
                         </table>

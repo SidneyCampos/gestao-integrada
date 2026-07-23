@@ -124,6 +124,8 @@ model BemPermanente {
   dataEntrada       DateTime @default(now())
   status            String   @default("ATIVO")
   origem            String   @default("ADQUIRIDO") // "ADQUIRIDO" | "DOACAO"
+  doador            String?  // Preenchido apenas quando origem = DOACAO
+  valorBem          Float?   // Valor estimado / nota fiscal do bem
 
   setorId           Int
   setor             Setor    @relation(fields: [setorId], references: [id])

@@ -13,5 +13,7 @@ const sectorMiddleware = require('../../shared/middlewares/sectorMiddleware');
 router.get('/consumo', RelatorioController.consumo);
 router.get('/ferramentas', RelatorioController.ferramentas);
 router.get('/ti', sectorMiddleware('TI'), RelatorioController.ti);
+router.get('/bens-permanentes', RelatorioController.bensPermanentes);
+
 
 module.exports = router;
