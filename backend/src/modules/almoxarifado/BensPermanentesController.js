@@ -37,7 +37,7 @@ class BensPermanentesController {
      */
     static async criar(req, res) {
         try {
-            const { numeroPatrimonio, descricao, setorId, dataEntrada, status } = req.body;
+            const { numeroPatrimonio, descricao, setorId, dataEntrada, status, origem } = req.body;
 
             if (!numeroPatrimonio || !descricao || !setorId) {
                 return res.status(400).json({ 
@@ -79,6 +79,7 @@ class BensPermanentesController {
                     setorId: parseInt(setorId),
                     usuarioRegistroId: parseInt(usuarioRegistroId),
                     status: status || "ATIVO",
+                    origem: origem || "ADQUIRIDO",
                     dataEntrada: dataEntrada ? new Date(dataEntrada) : undefined
                 },
                 include: {
@@ -102,7 +103,7 @@ class BensPermanentesController {
     static async atualizar(req, res) {
         try {
             const { id } = req.params;
-            const { numeroPatrimonio, descricao, setorId, status } = req.body;
+            const { numeroPatrimonio, descricao, setorId, status, origem } = req.body;
 
             const bemAtual = await prisma.bemPermanente.findUnique({
                 where: { id: parseInt(id) }
@@ -131,7 +132,8 @@ class BensPermanentesController {
                     numeroPatrimonio: numeroPatrimonio ? String(numeroPatrimonio).trim() : undefined,
                     descricao: descricao || undefined,
                     setorId: setorId ? parseInt(setorId) : undefined,
-                    status: status || undefined
+                    status: status || undefined,
+                    origem: origem || undefined
                 },
                 include: {
                     setor: true,

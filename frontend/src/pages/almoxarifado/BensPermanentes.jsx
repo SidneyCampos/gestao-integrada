@@ -47,6 +47,7 @@ const FORM_INICIAL = {
     descricao: '',
     setorId: '',
     status: 'ATIVO',
+    origem: 'ADQUIRIDO',
     dataEntrada: new Date().toISOString().split('T')[0],
 };
 
@@ -271,6 +272,7 @@ export default function BensPermanentes({ usuarioLogado }) {
                                     <th className="px-6 py-4">Descrição</th>
                                     <th className="px-6 py-4">Setor Alocado</th>
                                     <th className="px-6 py-4">Data Entrada</th>
+                                    <th className="px-6 py-4 text-center">Origem</th>
                                     <th className="px-6 py-4 text-center">Status</th>
                                     <th className="px-6 py-4 text-right">Ações</th>
                                 </tr>
@@ -292,6 +294,13 @@ export default function BensPermanentes({ usuarioLogado }) {
                                         </td>
                                         <td className="px-6 py-3.5 text-xs font-mono text-slate-500">
                                             {new Date(bem.dataEntrada).toLocaleDateString('pt-BR')}
+                                        </td>
+                                        <td className="px-6 py-3.5 text-center">
+                                            {bem.origem === 'DOACAO' ? (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-100 text-pink-700 uppercase tracking-wide">Doação</span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-700 uppercase tracking-wide">Adquirido</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-3.5 text-center">
                                             <StatusBadge status={bem.status} />
@@ -318,7 +327,12 @@ export default function BensPermanentes({ usuarioLogado }) {
                                         <span className="font-mono text-xs font-black text-violet-700 tracking-tight">
                                             {bem.numeroPatrimonio}
                                         </span>
-                                        <StatusBadge status={bem.status} />
+                                        <div className="flex items-center gap-1.5">
+                                            {bem.origem === 'DOACAO' && (
+                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-pink-100 text-pink-700 uppercase">Doação</span>
+                                            )}
+                                            <StatusBadge status={bem.status} />
+                                        </div>
                                     </div>
                                     <p className="text-sm font-bold text-slate-800 leading-snug">
                                         {bem.descricao}
@@ -409,8 +423,48 @@ export default function BensPermanentes({ usuarioLogado }) {
                         />
                     </div>
 
-                    {/* Data de Entrada + Status — linha 2 campos */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Origem + Status + Data — linha com 3 campos */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {/* ORIGEM — Doação ou Adquirido */}
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                Origem
+                            </label>
+                            <div className="flex flex-col gap-2">
+                                <label className={`flex items-center gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                    form.origem === 'ADQUIRIDO'
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                                }`}>
+                                    <input
+                                        type="radio"
+                                        name="origem"
+                                        value="ADQUIRIDO"
+                                        checked={form.origem === 'ADQUIRIDO'}
+                                        onChange={e => handleFormChange('origem', e.target.value)}
+                                        className="accent-blue-600"
+                                    />
+                                    <span className="text-xs font-bold text-slate-700">🏛️ Prefeitura</span>
+                                </label>
+                                <label className={`flex items-center gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                    form.origem === 'DOACAO'
+                                        ? 'border-pink-400 bg-pink-50'
+                                        : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                                }`}>
+                                    <input
+                                        type="radio"
+                                        name="origem"
+                                        value="DOACAO"
+                                        checked={form.origem === 'DOACAO'}
+                                        onChange={e => handleFormChange('origem', e.target.value)}
+                                        className="accent-pink-500"
+                                    />
+                                    <span className="text-xs font-bold text-slate-700">🎁 Doação</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* DATA DE ENTRADA */}
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 Data de Entrada
@@ -426,6 +480,7 @@ export default function BensPermanentes({ usuarioLogado }) {
                             </div>
                         </div>
 
+                        {/* STATUS */}
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 Status

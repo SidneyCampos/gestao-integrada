@@ -123,6 +123,7 @@ model BemPermanente {
   descricao         String
   dataEntrada       DateTime @default(now())
   status            String   @default("ATIVO")
+  origem            String   @default("ADQUIRIDO") // "ADQUIRIDO" | "DOACAO"
 
   setorId           Int
   setor             Setor    @relation(fields: [setorId], references: [id])
