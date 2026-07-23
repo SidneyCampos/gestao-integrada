@@ -18,7 +18,9 @@ import {
   ChevronRight,
   MoreVertical,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Check,
+  X
 } from "lucide-react";
 import api from "../api/api";
 import Modal from "../components/Modal";
@@ -33,9 +35,14 @@ export default function Usuarios() {
   const [modalUsuarioAberto, setModalUsuarioAberto] = useState(false);
   const [modalSetorAberto, setModalSetorAberto] = useState(false);
   
-  // Estados de formulário
+  // Estados de formulário — Usuário
   const [editandoId, setEditandoId] = useState(null);
   const [novoSetorNome, setNovoSetorNome] = useState("");
+
+  // Estados de edição inline de setor
+  const [editandoSetorId, setEditandoSetorId] = useState(null);
+  const [nomeEditandoSetor, setNomeEditandoSetor] = useState("");
+  const [salvandoSetor, setSalvandoSetor] = useState(false);
   const [usuarioForm, setUsuarioForm] = useState({
     nome: "",
     login: "",
@@ -127,13 +134,47 @@ export default function Usuarios() {
     try {
       setSalvando(true);
       await api.post("/core/setores", { nome: novoSetorNome });
-      setModalSetorAberto(false);
       setNovoSetorNome("");
       buscarDados();
     } catch (erro) {
       alert(erro.response?.data?.erro || "Erro ao criar setor.");
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleIniciarEdicaoSetor = (setor) => {
+    setEditandoSetorId(setor.id);
+    setNomeEditandoSetor(setor.nome);
+  };
+
+  const handleCancelarEdicaoSetor = () => {
+    setEditandoSetorId(null);
+    setNomeEditandoSetor("");
+  };
+
+  const handleSalvarRenomearSetor = async (id) => {
+    const nomeTrimmed = nomeEditandoSetor.trim().toUpperCase();
+    if (!nomeTrimmed) return;
+    try {
+      setSalvandoSetor(true);
+      await api.put(`/core/setores/${id}`, { nome: nomeTrimmed });
+      setEditandoSetorId(null);
+      buscarDados();
+    } catch (erro) {
+      alert(erro.response?.data?.erro || "Erro ao renomear setor.");
+    } finally {
+      setSalvandoSetor(false);
+    }
+  };
+
+  const handleDeletarSetor = async (id, nome) => {
+    if (!window.confirm(`Excluir o setor "${nome}"? Esta ação não pode ser desfeita.`)) return;
+    try {
+      await api.delete(`/core/setores/${id}`);
+      buscarDados();
+    } catch (erro) {
+      alert(erro.response?.data?.erro || "Erro ao excluir setor.");
     }
   };
 
@@ -383,46 +424,107 @@ export default function Usuarios() {
         </form>
       </Modal>
 
-      {/* MODAL: NOVO SETOR */}
+      {/* MODAL: GERENCIAR SETORES */}
       <Modal
         isOpen={modalSetorAberto}
-        onClose={() => setModalSetorAberto(false)}
-        title="Cadastrar Novo Módulo/Setor"
+        onClose={() => { setModalSetorAberto(false); setEditandoSetorId(null); setNovoSetorNome(""); }}
+        title="Gerenciar Setores / Módulos"
+        width="max-w-lg"
       >
-        <form onSubmit={handleCriarSetor} className="space-y-6">
+        <div className="space-y-5">
+
+          {/* Lista de setores existentes */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome do Setor</label>
-            <input
-              type="text"
-              required
-              autoFocus
-              className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-bold text-base transition-all"
-              placeholder="Ex: TI, ALMOXARIFADO, RH"
-              value={novoSetorNome}
-              onChange={(e) => setNovoSetorNome(e.target.value)}
-            />
-            <p className="text-[10px] text-slate-400 font-medium italic mt-2">
-              * O nome do setor será usado como base para as permissões de acesso.
-            </p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Setores Cadastrados</p>
+            {setores.length === 0 ? (
+              <p className="text-sm text-slate-400 italic py-2">Nenhum setor cadastrado ainda.</p>
+            ) : (
+              <ul className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
+                {setores.map(s => (
+                  <li key={s.id} className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-slate-50 transition-colors">
+                    <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+
+                    {/* MODO EDIÇÃO INLINE */}
+                    {editandoSetorId === s.id ? (
+                      <>
+                        <input
+                          type="text"
+                          autoFocus
+                          value={nomeEditandoSetor}
+                          onChange={e => setNomeEditandoSetor(e.target.value.toUpperCase())}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleSalvarRenomearSetor(s.id);
+                            if (e.key === 'Escape') handleCancelarEdicaoSetor();
+                          }}
+                          className="flex-1 bg-white border-b-2 border-blue-400 outline-none text-sm font-bold uppercase tracking-wide py-0.5"
+                        />
+                        <button
+                          onClick={() => handleSalvarRenomearSetor(s.id)}
+                          disabled={salvandoSetor}
+                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors shrink-0"
+                          title="Confirmar"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={handleCancelarEdicaoSetor}
+                          className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+                          title="Cancelar"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : (
+                      /* MODO VISUALIZAÇÃO */
+                      <>
+                        <span className="flex-1 text-sm font-bold text-slate-700 uppercase tracking-tight">{s.nome}</span>
+                        <button
+                          onClick={() => handleIniciarEdicaoSetor(s)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
+                          title="Renomear setor"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeletarSetor(s.id, s.nome)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                          title="Excluir setor"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setModalSetorAberto(false)}
-              className="flex-1 px-6 py-3.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-2xl transition-all"
-            >
-              Voltar
-            </button>
-            <button
-              type="submit"
-              disabled={salvando}
-              className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white px-6 py-3.5 rounded-2xl font-black text-sm shadow-xl shadow-slate-100 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
-            >
-              {salvando ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Criar Setor"}
-            </button>
+          {/* Formulário de novo setor */}
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Adicionar Novo Setor</p>
+            <form onSubmit={handleCriarSetor} className="flex gap-2">
+              <input
+                type="text"
+                required
+                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-bold text-sm uppercase transition-all placeholder:normal-case placeholder:font-normal placeholder:text-slate-400"
+                placeholder="Nome do novo setor..."
+                value={novoSetorNome}
+                onChange={(e) => setNovoSetorNome(e.target.value.toUpperCase())}
+              />
+              <button
+                type="submit"
+                disabled={salvando || !novoSetorNome.trim()}
+                className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg transition-all active:scale-95 disabled:opacity-50 shrink-0"
+              >
+                {salvando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Criar</>}
+              </button>
+            </form>
+            <p className="text-[10px] text-slate-400 font-medium italic mt-2">
+              O nome será salvo em MAIÚSCULAS automaticamente.
+            </p>
           </div>
-        </form>
+        </div>
       </Modal>
     </div>
   );

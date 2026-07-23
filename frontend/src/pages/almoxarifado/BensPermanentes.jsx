@@ -309,7 +309,7 @@ export default function BensPermanentes({ usuarioLogado }) {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {bensFiltrados.map(bem => (
-                                    <tr key={bem.id} className="hover:bg-slate-50 transition-colors group">
+                                    <tr key={bem.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-3.5 font-mono text-xs font-black text-violet-700 tracking-tight">
                                             {bem.numeroPatrimonio}
                                         </td>
@@ -336,7 +336,7 @@ export default function BensPermanentes({ usuarioLogado }) {
                                             <StatusBadge status={bem.status} />
                                         </td>
                                         <td className="px-6 py-3.5 text-right">
-                                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex justify-end gap-1">
                                                 <button
                                                     onClick={(e) => handleAbrirEdicao(e, bem)}
                                                     className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
