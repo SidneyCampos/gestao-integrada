@@ -1,7 +1,7 @@
 /**
  * @file BensPermanentes.jsx
  * @description Módulo de controle de Bens Permanentes (Patrimônio Físico).
- * Permite cadastrar, visualizar e gerenciar bens alocados por setor.
+ * Permite cadastrar, editar, visualizar e gerenciar bens alocados por setor.
  * Segue o padrão Data-Dense UI: tabela compacta no desktop, cards empilhados no mobile.
  * @module Frontend/Pages/Almoxarifado/BensPermanentes
  */
@@ -12,13 +12,15 @@ import {
     ArrowLeft,
     Plus,
     Trash2,
+    Edit3,
     ChevronDown,
     Loader2,
     AlertCircle,
     Building2,
     Calendar,
     CheckCircle2,
-    Hash
+    Hash,
+    Save
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
@@ -65,8 +67,9 @@ export default function BensPermanentes({ usuarioLogado }) {
     const [filtroSetor, setFiltroSetor] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('');
 
-    // --- Modal ---
+    // --- Modal (novo + edição compartilham o mesmo) ---
     const [modalAberto, setModalAberto] = useState(false);
+    const [editandoId, setEditandoId] = useState(null); // null = novo, number = edição
     const [salvando, setSalvando] = useState(false);
     const [form, setForm] = useState(FORM_INICIAL);
     const [erroForm, setErroForm] = useState('');
@@ -104,8 +107,28 @@ export default function BensPermanentes({ usuarioLogado }) {
         setSetores(prev => [...prev, novoSetor].sort((a, b) => a.nome.localeCompare(b.nome)));
     };
 
+    // Abre modal para NOVO bem
     const handleAbrirModal = () => {
+        setEditandoId(null);
         setForm(FORM_INICIAL);
+        setErroForm('');
+        setModalAberto(true);
+    };
+
+    // Abre modal para EDITAR bem existente
+    const handleAbrirEdicao = (e, bem) => {
+        e.stopPropagation();
+        setEditandoId(bem.id);
+        setForm({
+            numeroPatrimonio: bem.numeroPatrimonio,
+            descricao: bem.descricao,
+            setorId: String(bem.setor?.id || bem.setorId || ''),
+            status: bem.status,
+            origem: bem.origem || 'ADQUIRIDO',
+            dataEntrada: bem.dataEntrada
+                ? new Date(bem.dataEntrada).toISOString().split('T')[0]
+                : new Date().toISOString().split('T')[0],
+        });
         setErroForm('');
         setModalAberto(true);
     };
@@ -113,6 +136,7 @@ export default function BensPermanentes({ usuarioLogado }) {
     const handleFecharModal = () => {
         setModalAberto(false);
         setErroForm('');
+        setEditandoId(null);
     };
 
     const handleFormChange = (campo, valor) => {
@@ -121,22 +145,31 @@ export default function BensPermanentes({ usuarioLogado }) {
     };
 
     const handleSalvar = async () => {
-        // Validações obrigatórias
         if (!form.numeroPatrimonio.trim()) return setErroForm('Informe o número do patrimônio.');
         if (!form.descricao.trim()) return setErroForm('Informe a descrição do bem.');
         if (!form.setorId) return setErroForm('Selecione o setor de destino.');
 
         try {
             setSalvando(true);
-            await api.post('/almoxarifado/bens-permanentes', {
+            const payload = {
                 ...form,
                 setorId: parseInt(form.setorId),
                 usuarioRegistroId: usuarioLogado.id,
-            });
+            };
+
+            if (editandoId) {
+                // Edição — PUT
+                await api.put(`/almoxarifado/bens-permanentes/${editandoId}`, payload);
+            } else {
+                // Criação — POST
+                await api.post('/almoxarifado/bens-permanentes', payload);
+            }
+
             setModalAberto(false);
+            setEditandoId(null);
             buscarBens();
         } catch (erro) {
-            setErroForm(erro.response?.data?.erro || 'Erro ao cadastrar bem permanente.');
+            setErroForm(erro.response?.data?.erro || 'Erro ao salvar bem permanente.');
         } finally {
             setSalvando(false);
         }
@@ -163,6 +196,8 @@ export default function BensPermanentes({ usuarioLogado }) {
         const matchStatus = !filtroStatus || b.status === filtroStatus;
         return matchTexto && matchSetor && matchStatus;
     });
+
+    const modoEdicao = editandoId !== null;
 
     return (
         <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
@@ -196,7 +231,6 @@ export default function BensPermanentes({ usuarioLogado }) {
 
             {/* ── FILTROS ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                {/* Busca texto */}
                 <div className="relative">
                     <Hash className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
@@ -207,8 +241,6 @@ export default function BensPermanentes({ usuarioLogado }) {
                         className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-violet-100"
                     />
                 </div>
-
-                {/* Filtro setor */}
                 <div className="relative">
                     <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <select
@@ -220,8 +252,6 @@ export default function BensPermanentes({ usuarioLogado }) {
                         {setores.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
                     </select>
                 </div>
-
-                {/* Filtro status */}
                 <div className="relative">
                     <CheckCircle2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <select
@@ -279,7 +309,7 @@ export default function BensPermanentes({ usuarioLogado }) {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {bensFiltrados.map(bem => (
-                                    <tr key={bem.id} className="hover:bg-slate-50 transition-colors">
+                                    <tr key={bem.id} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-6 py-3.5 font-mono text-xs font-black text-violet-700 tracking-tight">
                                             {bem.numeroPatrimonio}
                                         </td>
@@ -306,13 +336,22 @@ export default function BensPermanentes({ usuarioLogado }) {
                                             <StatusBadge status={bem.status} />
                                         </td>
                                         <td className="px-6 py-3.5 text-right">
-                                            <button
-                                                onClick={(e) => handleDeletar(e, bem.id)}
-                                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                title="Excluir bem"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => handleAbrirEdicao(e, bem)}
+                                                    className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                                                    title="Editar bem"
+                                                >
+                                                    <Edit3 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => handleDeletar(e, bem.id)}
+                                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Excluir bem"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -347,8 +386,16 @@ export default function BensPermanentes({ usuarioLogado }) {
                                                 {new Date(bem.dataEntrada).toLocaleDateString('pt-BR')}
                                             </span>
                                             <button
+                                                onClick={(e) => handleAbrirEdicao(e, bem)}
+                                                className="text-slate-400 hover:text-violet-600"
+                                                title="Editar"
+                                            >
+                                                <Edit3 className="w-4 h-4" />
+                                            </button>
+                                            <button
                                                 onClick={(e) => handleDeletar(e, bem.id)}
                                                 className="text-slate-400 hover:text-red-600"
+                                                title="Excluir"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -361,15 +408,25 @@ export default function BensPermanentes({ usuarioLogado }) {
                 )}
             </div>
 
-            {/* ── MODAL NOVO BEM ── */}
+            {/* ── MODAL: NOVO / EDITAR BEM ── */}
             <Modal
                 isOpen={modalAberto}
                 onClose={handleFecharModal}
-                title="Cadastrar Novo Bem Permanente"
-                variant="blue"
+                title={modoEdicao ? 'Editar Bem Permanente' : 'Cadastrar Novo Bem Permanente'}
+                variant={modoEdicao ? 'blue' : 'blue'}
                 width="max-w-lg"
             >
                 <div className="flex flex-col gap-5">
+                    {/* Banner de modo edição */}
+                    {modoEdicao && (
+                        <div className="bg-violet-50 border border-violet-200 p-3 rounded-xl flex items-center gap-2.5">
+                            <Edit3 className="w-4 h-4 text-violet-500 shrink-0" />
+                            <p className="text-xs text-violet-700 font-medium">
+                                Editando o registro. Altere somente os campos necessários e clique em <strong>Salvar Alterações</strong>.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Aviso de erro */}
                     {erroForm && (
                         <div className="bg-red-50 border border-red-200 p-3 rounded-xl flex items-center gap-2.5">
@@ -409,7 +466,7 @@ export default function BensPermanentes({ usuarioLogado }) {
                         />
                     </div>
 
-                    {/* Setor de Destino — dinâmico via API com criação inline */}
+                    {/* Setor de Destino */}
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             Setor de Destino <span className="text-red-400">*</span>
@@ -423,9 +480,9 @@ export default function BensPermanentes({ usuarioLogado }) {
                         />
                     </div>
 
-                    {/* Origem + Status + Data — linha com 3 campos */}
+                    {/* Origem + Data + Status */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {/* ORIGEM — Doação ou Adquirido */}
+                        {/* ORIGEM */}
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 Origem
@@ -515,10 +572,13 @@ export default function BensPermanentes({ usuarioLogado }) {
                             disabled={salvando || !form.numeroPatrimonio || !form.descricao || !form.setorId}
                             className="bg-violet-600 hover:bg-violet-700 text-white px-7 py-2.5 rounded-xl font-black text-sm flex items-center gap-2 shadow-lg shadow-violet-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                         >
-                            {salvando
-                                ? <><Loader2 className="w-4 h-4 animate-spin" /> Cadastrando...</>
-                                : <><Archive className="w-4 h-4" /> Cadastrar Bem</>
-                            }
+                            {salvando ? (
+                                <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</>
+                            ) : modoEdicao ? (
+                                <><Save className="w-4 h-4" /> Salvar Alterações</>
+                            ) : (
+                                <><Archive className="w-4 h-4" /> Cadastrar Bem</>
+                            )}
                         </button>
                     </div>
                 </div>
