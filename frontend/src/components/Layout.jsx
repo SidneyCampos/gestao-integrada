@@ -108,7 +108,7 @@ export default function Layout({ usuario, onLogout }) {
   };
 
   return (
-    <div className="flex h-[100dvh] bg-slate-100 text-slate-900 font-sans overflow-hidden">
+    <div className="flex h-[100dvh] bg-slate-100 text-slate-900 font-sans overflow-hidden print:h-auto print:overflow-visible print:bg-white">
       {/* ================= BARRA LATERAL (DESKTOP) ================= */}
       <aside className="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col shadow-xl z-20 shrink-0 print:hidden">
         <div className="h-20 bg-white flex items-center justify-center p-2 border-b border-slate-200">
@@ -187,7 +187,7 @@ export default function Layout({ usuario, onLogout }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 print:overflow-visible print:p-0">
           <Outlet />
         </main>
       </div>

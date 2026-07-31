@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import api from '../api/api';
 import { hasPermission } from '../utils/auth';
+import useTabelaOrdenavel from '../hooks/useTabelaOrdenavel';
+import HeaderOrdenavel from '../components/HeaderOrdenavel';
 
 export default function Relatorios({ usuarioLogado }) {
     const [abaAtiva, setAbaAtiva] = useState("consumo");
@@ -40,6 +42,12 @@ export default function Relatorios({ usuarioLogado }) {
         setorId: "",
         status: ""
     });
+
+    const { dadosOrdenados: registrosConsumoExibidos, sortConfig: sortConsumo, alternarOrdenacao: onSortConsumo } = useTabelaOrdenavel(dadosConsumo?.registros || []);
+    const { dadosOrdenados: registrosBensExibidos, sortConfig: sortBens, alternarOrdenacao: onSortBens } = useTabelaOrdenavel(dadosBens?.registros || []);
+    const { dadosOrdenados: inventarioFerramentasExibido, sortConfig: sortInvFerr, alternarOrdenacao: onSortInvFerr } = useTabelaOrdenavel(dadosFerramentas?.inventario || []);
+    const { dadosOrdenados: emprestimosAtivosExibidos, sortConfig: sortEmpFerr, alternarOrdenacao: onSortEmpFerr } = useTabelaOrdenavel(dadosFerramentas?.emprestimosAtivos || []);
+    const { dadosOrdenados: inventarioTIExibido, sortConfig: sortInvTI, alternarOrdenacao: onSortInvTI } = useTabelaOrdenavel(dadosTI?.inventario || []);
 
     useEffect(() => {
         buscarSetores();
@@ -106,7 +114,7 @@ export default function Relatorios({ usuarioLogado }) {
     const handlePrint = () => window.print();
 
     return (
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500 print:p-0 print:max-w-none print:m-0">
             
             {/* ================= CABEÇALHO OFICIAL (APARECE APENAS NO PDF/PRINT) ================= */}
             <div className="hidden print:flex flex-col mb-8 pb-6 border-b-2 border-slate-900">
@@ -314,15 +322,15 @@ export default function Relatorios({ usuarioLogado }) {
                         <table className="w-full text-left border-collapse border border-slate-300">
                             <thead>
                                 <tr className="bg-slate-100 print:bg-slate-200 border-b-2 border-slate-300 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                                    <th className="px-6 py-4 border-r border-slate-300">Data</th>
-                                    <th className="px-6 py-4 border-r border-slate-300">Departamento Destino</th>
-                                    <th className="px-6 py-4 border-r border-slate-300">Mês Ref.</th>
-                                    <th className="px-6 py-4 border-r border-slate-300">Responsável</th>
-                                    <th className="px-6 py-4 text-right">Valor Total</th>
+                                    <HeaderOrdenavel campo="dataRegistro" label="Data" sortConfig={sortConsumo} onSort={onSortConsumo} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="departamentoDestino" label="Departamento Destino" sortConfig={sortConsumo} onSort={onSortConsumo} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="mesReferencia" label="Mês Ref." sortConfig={sortConsumo} onSort={onSortConsumo} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="usuario.nome" label="Responsável" sortConfig={sortConsumo} onSort={onSortConsumo} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="valorTotal" label="Valor Total" align="right" sortConfig={sortConsumo} onSort={onSortConsumo} />
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
-                                {dadosConsumo.registros.map(reg => (
+                                {registrosConsumoExibidos.map(reg => (
                                     <tr key={reg.id} className="text-[11px] font-medium print:break-inside-avoid">
                                         <td className="px-6 py-3 border-r border-slate-200 font-mono">{new Date(reg.dataRegistro).toLocaleDateString('pt-BR')}</td>
                                         <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{reg.departamentoDestino}</td>
@@ -345,25 +353,25 @@ export default function Relatorios({ usuarioLogado }) {
                         <table className="w-full text-left border-collapse border border-slate-300">
                             <thead>
                                 <tr className="bg-slate-100 print:bg-slate-200 border-b-2 border-slate-300 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                                    <th className="px-4 py-3 border-r border-slate-300">Nº Patrimônio</th>
-                                    <th className="px-4 py-3 border-r border-slate-300">Descrição</th>
-                                    <th className="px-4 py-3 border-r border-slate-300">Setor</th>
-                                    <th className="px-4 py-3 border-r border-slate-300">Entrada</th>
-                                    <th className="px-4 py-3 border-r border-slate-300 text-center">Origem / Doador</th>
-                                    <th className="px-4 py-3 border-r border-slate-300 text-center">Status</th>
-                                    <th className="px-4 py-3 text-right">Valor (R$)</th>
+                                    <HeaderOrdenavel campo="numeroPatrimonio" label="Nº Patrimônio" sortConfig={sortBens} onSort={onSortBens} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="descricao" label="Descrição" sortConfig={sortBens} onSort={onSortBens} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="setor.nome" label="Setor" sortConfig={sortBens} onSort={onSortBens} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="dataEntrada" label="Entrada" sortConfig={sortBens} onSort={onSortBens} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="origem" label="Origem / Doador" align="center" sortConfig={sortBens} onSort={onSortBens} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="status" label="Status" align="center" sortConfig={sortBens} onSort={onSortBens} className="border-r border-slate-300" />
+                                    <HeaderOrdenavel campo="valorBem" label="Valor (R$)" align="right" sortConfig={sortBens} onSort={onSortBens} />
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
-                                {dadosBens.registros.map(bem => (
+                                {registrosBensExibidos.map(bem => (
                                     <tr key={bem.id} className="text-[11px] font-medium print:break-inside-avoid">
                                         <td className="px-4 py-2.5 border-r border-slate-200 font-mono font-black text-violet-700">{bem.numeroPatrimonio}</td>
                                         <td className="px-4 py-2.5 border-r border-slate-200 font-semibold">{bem.descricao}</td>
                                         <td className="px-4 py-2.5 border-r border-slate-200 font-bold uppercase">{bem.setor?.nome || '—'}</td>
                                         <td className="px-4 py-2.5 border-r border-slate-200 font-mono">{new Date(bem.dataEntrada).toLocaleDateString('pt-BR')}</td>
-                                        <td className="px-4 py-2.5 border-r border-slate-200 text-center">
+                                        <td className="px-4 py-2.5 border-r border-slate-200 text-center align-middle">
                                             {bem.origem === 'DOACAO'
-                                                ? <><span className="font-black text-pink-700">Doação</span>{bem.doador && <><br/><span className="text-[9px] text-slate-500">{bem.doador}</span></>}</>
+                                                ? <div className="flex flex-col items-center justify-center"><span className="font-black text-pink-700">Doação</span><span className="text-[9px] text-slate-600 font-bold leading-tight mt-0.5">{bem.doador || 'Não informado'}</span></div>
                                                 : <span className="font-black text-blue-700">Adquirido</span>
                                             }
                                         </td>
@@ -390,14 +398,14 @@ export default function Relatorios({ usuarioLogado }) {
                             <table className="w-full text-left border-collapse border border-slate-300">
                                 <thead className="bg-slate-100 border-b-2 border-slate-300 text-[10px] font-black uppercase">
                                     <tr>
-                                        <th className="px-6 py-4 border-r border-slate-300">Ferramenta / Descrição</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Patrimônio</th>
-                                        <th className="px-6 py-4 text-center border-r border-slate-300">Total</th>
-                                        <th className="px-6 py-4 text-center">Disponível</th>
+                                        <HeaderOrdenavel campo="nome" label="Ferramenta / Descrição" sortConfig={sortInvFerr} onSort={onSortInvFerr} className="border-r border-slate-300" />
+                                        <HeaderOrdenavel campo="codigoPatrimonio" label="Patrimônio" sortConfig={sortInvFerr} onSort={onSortInvFerr} className="border-r border-slate-300" />
+                                        <HeaderOrdenavel campo="quantidadeTotal" label="Total" align="center" sortConfig={sortInvFerr} onSort={onSortInvFerr} className="border-r border-slate-300" />
+                                        <HeaderOrdenavel campo="qtdDisponivel" label="Disponível" align="center" sortConfig={sortInvFerr} onSort={onSortInvFerr} />
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {dadosFerramentas.inventario.map(inv => (
+                                    {inventarioFerramentasExibido.map(inv => (
                                         <tr key={inv.id} className="text-[11px] font-medium border-b border-slate-200">
                                             <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{inv.nome}</td>
                                             <td className="px-6 py-3 border-r border-slate-200 font-mono">{inv.codigoPatrimonio || "S/N"}</td>
@@ -415,14 +423,14 @@ export default function Relatorios({ usuarioLogado }) {
                             <table className="w-full text-left border-collapse border border-slate-300">
                                 <thead className="bg-slate-100 border-b-2 border-slate-300 text-[10px] font-black uppercase">
                                     <tr>
-                                        <th className="px-6 py-4 border-r border-slate-300">Funcionário</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Material Retirado</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Data de Saída</th>
-                                        <th className="px-6 py-4 text-center">Status</th>
+                                        <HeaderOrdenavel campo="usuario.nome" label="Funcionário" sortConfig={sortEmpFerr} onSort={onSortEmpFerr} className="border-r border-slate-300" />
+                                        <HeaderOrdenavel campo="ferramenta.nome" label="Material Retirado" sortConfig={sortEmpFerr} onSort={onSortEmpFerr} className="border-r border-slate-300" />
+                                        <HeaderOrdenavel campo="dataSaida" label="Data de Saída" sortConfig={sortEmpFerr} onSort={onSortEmpFerr} className="border-r border-slate-300" />
+                                        <HeaderOrdenavel campo="status" label="Status" align="center" sortConfig={sortEmpFerr} onSort={onSortEmpFerr} />
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {dadosFerramentas.emprestimosAtivos.map(emp => (
+                                    {emprestimosAtivosExibidos.map(emp => (
                                         <tr key={emp.id} className="text-[11px] font-medium border-b border-slate-200">
                                             <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{emp.usuario.nome}</td>
                                             <td className="px-6 py-3 border-r border-slate-200 font-bold">{emp.ferramenta.nome}</td>
@@ -442,14 +450,14 @@ export default function Relatorios({ usuarioLogado }) {
                             <table className="w-full text-left border-collapse border border-slate-300">
                                 <thead className="bg-slate-50 border-b-2 border-slate-300 text-[10px] font-black uppercase">
                                     <tr>
-                                        <th className="px-6 py-4 border-r border-slate-300">Item / Hardware</th>
-                                        <th className="px-6 py-4 border-r border-slate-300">Patrimônio</th>
-                                        <th className="px-6 py-4 text-center border-r border-slate-300">Total</th>
-                                        <th className="px-6 py-4 text-center">Disponível</th>
+                                        <HeaderOrdenavel campo="nome" label="Item / Hardware" sortConfig={sortInvTI} onSort={onSortInvTI} className="border-r border-slate-300" />
+                                        <HeaderOrdenavel campo="codigoPatrimonio" label="Patrimônio" sortConfig={sortInvTI} onSort={onSortInvTI} className="border-r border-slate-300" />
+                                        <HeaderOrdenavel campo="quantidadeTotal" label="Total" align="center" sortConfig={sortInvTI} onSort={onSortInvTI} className="border-r border-slate-300" />
+                                        <HeaderOrdenavel campo="qtdDisponivel" label="Disponível" align="center" sortConfig={sortInvTI} onSort={onSortInvTI} />
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {dadosTI.inventario.map(inv => (
+                                    {inventarioTIExibido.map(inv => (
                                         <tr key={inv.id} className="text-[11px] font-medium border-b border-slate-200">
                                             <td className="px-6 py-3 border-r border-slate-200 font-black uppercase">{inv.nome}</td>
                                             <td className="px-6 py-3 border-r border-slate-200 font-mono">{inv.codigoPatrimonio || "S/N"}</td>

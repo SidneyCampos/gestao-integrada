@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
 import Modal from '../../components/Modal';
 import SetorSelectComCriacao from '../../components/SetorSelectComCriacao';
+import useTabelaOrdenavel from '../../hooks/useTabelaOrdenavel';
+import HeaderOrdenavel from '../../components/HeaderOrdenavel';
 
 const STATUS_STYLE = {
     ATIVO:      { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Ativo' },
@@ -130,6 +132,8 @@ export default function BensPermanentes({ usuarioLogado }) {
             && (!filtroStatus || b.status === filtroStatus);
     });
 
+    const { dadosOrdenados: bensExibidos, sortConfig, alternarOrdenacao } = useTabelaOrdenavel(bensFiltrados);
+
     const modoEdicao = editandoId !== null;
     const ehDoacao   = form.origem === 'DOACAO';
 
@@ -196,18 +200,18 @@ export default function BensPermanentes({ usuarioLogado }) {
                         <table className="w-full text-left border-collapse hidden lg:table">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase text-slate-500 font-black tracking-widest">
-                                    <th className="px-5 py-4">Nº Patrimônio</th>
-                                    <th className="px-5 py-4">Descrição</th>
-                                    <th className="px-5 py-4">Setor</th>
-                                    <th className="px-5 py-4">Entrada</th>
-                                    <th className="px-5 py-4 text-right">Valor</th>
-                                    <th className="px-5 py-4 text-center">Origem</th>
-                                    <th className="px-5 py-4 text-center">Status</th>
-                                    <th className="px-5 py-4 text-right">Ações</th>
+                                    <HeaderOrdenavel campo="numeroPatrimonio" label="Nº Patrimônio" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                    <HeaderOrdenavel campo="descricao" label="Descrição" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                    <HeaderOrdenavel campo="setor.nome" label="Setor" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                    <HeaderOrdenavel campo="dataEntrada" label="Entrada" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                    <HeaderOrdenavel campo="valorBem" label="Valor" align="right" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                    <HeaderOrdenavel campo="origem" label="Origem" align="center" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                    <HeaderOrdenavel campo="status" label="Status" align="center" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                    <HeaderOrdenavel label="Ações" align="right" desabilitado />
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {bensFiltrados.map(bem => (
+                                {bensExibidos.map(bem => (
                                     <tr key={bem.id} className="hover:bg-slate-50/70 transition-colors">
                                         <td className="px-5 py-3 font-mono text-xs font-black text-violet-700">{bem.numeroPatrimonio}</td>
                                         <td className="px-5 py-3 text-sm font-semibold text-slate-800 max-w-[220px]">
@@ -241,7 +245,7 @@ export default function BensPermanentes({ usuarioLogado }) {
 
                         {/* MOBILE CARDS */}
                         <div className="lg:hidden divide-y divide-slate-100">
-                            {bensFiltrados.map(bem => (
+                            {bensExibidos.map(bem => (
                                 <div key={bem.id} className="p-4 flex flex-col gap-2">
                                     <div className="flex justify-between items-start">
                                         <div>

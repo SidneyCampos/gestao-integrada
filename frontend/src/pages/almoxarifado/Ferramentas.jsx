@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import api from "../../api/api";
 import Modal from "../../components/Modal";
+import useTabelaOrdenavel from "../../hooks/useTabelaOrdenavel";
+import HeaderOrdenavel from "../../components/HeaderOrdenavel";
 
 export default function Ferramentas() {
   // ================= ESTADOS DO SISTEMA =================
@@ -238,18 +240,30 @@ export default function Ferramentas() {
     );
   };
 
+  // Auxiliar para identificar se um item pertence ao setor ou categoria de TI/Informática
+  const ehItemTI = (item) => {
+    if (!item) return false;
+    const cat = (item.categoria || '').toLowerCase();
+    const setorNome = (item.setor?.nome || '').toLowerCase();
+    return cat === 'informática' || cat === 'informatica' || cat === 'ti' || setorNome === 'ti';
+  };
+
   // ================= LÓGICA DE BUSCA FILTRADA =================
   const ferramentasFiltradas = useMemo(() => {
     return ferramentas.filter(f => 
-      f.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-      (f.codigoPatrimonio && f.codigoPatrimonio.toLowerCase().includes(termoBusca.toLowerCase()))
+      !ehItemTI(f) && (
+        f.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+        (f.codigoPatrimonio && f.codigoPatrimonio.toLowerCase().includes(termoBusca.toLowerCase()))
+      )
     );
   }, [ferramentas, termoBusca]);
 
   const emprestimosFiltrados = useMemo(() => {
     return emprestimos.filter(e => 
-      e.usuario?.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-      e.ferramenta?.nome.toLowerCase().includes(termoBusca.toLowerCase())
+      !ehItemTI(e.ferramenta) && (
+        e.usuario?.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+        e.ferramenta?.nome.toLowerCase().includes(termoBusca.toLowerCase())
+      )
     );
   }, [emprestimos, termoBusca]);
 
@@ -259,6 +273,10 @@ export default function Ferramentas() {
       (f.telefone && f.telefone.includes(termoBusca))
     );
   }, [funcionariosExternos, termoBusca]);
+
+  const { dadosOrdenados: ferramentasExibidas, sortConfig: sortEstoque, alternarOrdenacao: onSortEstoque } = useTabelaOrdenavel(ferramentasFiltradas);
+  const { dadosOrdenados: emprestimosExibidos, sortConfig: sortEmprestimos, alternarOrdenacao: onSortEmprestimos } = useTabelaOrdenavel(emprestimosFiltrados);
+  const { dadosOrdenados: equipeExibida, sortConfig: sortEquipe, alternarOrdenacao: onSortEquipe } = useTabelaOrdenavel(equipeFiltrada);
 
   return (
     <div className="space-y-6 relative">
@@ -363,20 +381,20 @@ export default function Ferramentas() {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">
-                  <th className="px-6 py-3">Nome</th>
-                  <th className="px-6 py-3">Telefone</th>
-                  <th className="px-6 py-3 text-right">Ações</th>
+                  <HeaderOrdenavel campo="nome" label="Nome" sortConfig={sortEquipe} onSort={onSortEquipe} />
+                  <HeaderOrdenavel campo="telefone" label="Telefone" sortConfig={sortEquipe} onSort={onSortEquipe} />
+                  <HeaderOrdenavel label="Ações" align="right" desabilitado />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {equipeFiltrada.length === 0 ? (
+                {equipeExibida.length === 0 ? (
                   <tr>
                     <td colSpan="3" className="px-6 py-10 text-center text-slate-400 italic">
                       {termoBusca ? "Nenhum funcionário encontrado com esse termo." : "Nenhum funcionário externo cadastrado."}
                     </td>
                   </tr>
                 ) : (
-                  equipeFiltrada.map(f => (
+                  equipeExibida.map(f => (
                     <tr key={f.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 font-bold text-slate-700">{f.nome}</td>
                       <td className="px-6 py-4 text-slate-500 text-sm">{f.telefone || "---"}</td>
@@ -418,31 +436,23 @@ export default function Ferramentas() {
                 <table className="w-full text-left border-collapse block lg:table">
                   <thead className="hidden lg:table-header-group">
                     <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold block lg:table-row">
-                      <th className="px-4 py-3 block lg:table-cell">
-                        Patrimônio
-                      </th>
-                      <th className="px-4 py-3 block lg:table-cell">Descrição</th>
-                      <th className="px-4 py-3 text-center block lg:table-cell">
-                        Total
-                      </th>
-                      <th className="px-4 py-3 text-center block lg:table-cell">
-                        Disponível
-                      </th>
-                      <th className="px-4 py-3 block lg:table-cell">Status</th>
-                      <th className="px-4 py-3 text-right block lg:table-cell">
-                        Opções
-                      </th>
+                      <HeaderOrdenavel campo="codigoPatrimonio" label="Patrimônio" sortConfig={sortEstoque} onSort={onSortEstoque} />
+                      <HeaderOrdenavel campo="nome" label="Descrição" sortConfig={sortEstoque} onSort={onSortEstoque} />
+                      <HeaderOrdenavel campo="quantidadeTotal" label="Total" align="center" sortConfig={sortEstoque} onSort={onSortEstoque} />
+                      <HeaderOrdenavel campo="quantidadeDisponivel" label="Disponível" align="center" sortConfig={sortEstoque} onSort={onSortEstoque} />
+                      <HeaderOrdenavel campo="status" label="Status" sortConfig={sortEstoque} onSort={onSortEstoque} />
+                      <HeaderOrdenavel label="Opções" align="right" desabilitado />
                     </tr>
                   </thead>
                   <tbody className="grid grid-cols-1 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
-                    {ferramentasFiltradas.length === 0 && (
+                    {ferramentasExibidas.length === 0 && (
                       <tr className="lg:table-row">
                          <td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic">
                            Nenhuma ferramenta encontrada.
                          </td>
                       </tr>
                     )}
-                    {ferramentasFiltradas.map((ferramenta) => (
+                    {ferramentasExibidas.map((ferramenta) => (
                       <tr
                         key={ferramenta.id}
                         className="block lg:table-row bg-white border border-slate-200 lg:border-none rounded-xl lg:rounded-none shadow-sm lg:shadow-none hover:bg-slate-50 relative"
@@ -547,21 +557,15 @@ export default function Ferramentas() {
               <table className="w-full text-left border-collapse block lg:table">
                 <thead className="hidden lg:table-header-group">
                   <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold block lg:table-row">
-                    <th className="px-4 py-3 block lg:table-cell">
-                      Funcionário
-                    </th>
-                    <th className="px-4 py-3 block lg:table-cell">
-                      Ferramenta
-                    </th>
-                    <th className="px-4 py-3 block lg:table-cell">Saída</th>
-                    <th className="px-4 py-3 block lg:table-cell">Status</th>
-                    <th className="px-4 py-3 text-right block lg:table-cell">
-                      Ação
-                    </th>
+                    <HeaderOrdenavel campo="usuario.nome" label="Funcionário" sortConfig={sortEmprestimos} onSort={onSortEmprestimos} />
+                    <HeaderOrdenavel campo="ferramenta.nome" label="Ferramenta" sortConfig={sortEmprestimos} onSort={onSortEmprestimos} />
+                    <HeaderOrdenavel campo="dataEmprestimo" label="Saída" sortConfig={sortEmprestimos} onSort={onSortEmprestimos} />
+                    <HeaderOrdenavel campo="status" label="Status" sortConfig={sortEmprestimos} onSort={onSortEmprestimos} />
+                    <HeaderOrdenavel label="Ação" align="right" desabilitado />
                   </tr>
                 </thead>
                 <tbody className="grid grid-cols-1 md:grid-cols-2 lg:table-row-group lg:divide-y divide-slate-200 text-sm text-slate-700 gap-4 lg:gap-0 relative">
-                  {emprestimosFiltrados.length === 0 && (
+                  {emprestimosExibidos.length === 0 && (
                     <tr className="block lg:table-row">
                       <td
                         colSpan="5"
@@ -572,7 +576,7 @@ export default function Ferramentas() {
                     </tr>
                   )}
 
-                  {emprestimosFiltrados.map((emp) => (
+                  {emprestimosExibidos.map((emp) => (
                     <tr
                       key={emp.id}
                       className="block lg:table-row bg-white border border-slate-200 lg:border-none rounded-xl lg:rounded-none shadow-sm lg:shadow-none hover:bg-slate-50 relative"

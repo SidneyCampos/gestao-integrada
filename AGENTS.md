@@ -31,6 +31,8 @@
 1. **Mobile-First**: Design must be planned for small screens first, then scale up
 2. **Data-Dense UI**: Desktop uses compact tables; mobile transforms rows into stacked cards (easy to tap)
 3. **Error Prevention**: Always prevent user mistakes (e.g., disable save buttons during loading, confirm destructive actions)
+4. **Sortable & Filterable Tables (Standard)**: EVERY table in the system MUST use `useTabelaOrdenavel` (hook in `src/hooks/useTabelaOrdenavel.js`) and `HeaderOrdenavel` (component in `src/components/HeaderOrdenavel.jsx`) so columns can be sorted (ASC/DESC) upon clicking column headers.
+
 
 ## Code Generation Rules
 1. **Complete Code Blocks**: Never use placeholders like `// ... rest of code`. Always provide full, functional blocks that can be copy-pasted

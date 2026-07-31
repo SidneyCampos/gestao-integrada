@@ -31,6 +31,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
 import Modal from '../../components/Modal';
 import SetorSelectComCriacao from '../../components/SetorSelectComCriacao';
+import useTabelaOrdenavel from '../../hooks/useTabelaOrdenavel';
+import HeaderOrdenavel from '../../components/HeaderOrdenavel';
 
 export default function Consumo({ usuarioLogado }) {
     const navigate = useNavigate();
@@ -217,6 +219,8 @@ export default function Consumo({ usuarioLogado }) {
         (filtroMes === '' || r.mesReferencia === filtroMes)
     );
 
+    const { dadosOrdenados: requisicoesExibidas, sortConfig, alternarOrdenacao } = useTabelaOrdenavel(requisicoesFiltradas);
+
     return (
         <div className="p-4 lg:p-8 max-w-7xl mx-auto animate-in fade-in duration-500">
 
@@ -284,16 +288,16 @@ export default function Consumo({ usuarioLogado }) {
                         <thead className="hidden lg:table-header-group">
                             <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase text-slate-500 font-black tracking-widest block lg:table-row">
                                 <th className="px-6 py-4 w-10"></th>
-                                <th className="px-6 py-4">Data</th>
-                                <th className="px-6 py-4">Departamento Destino</th>
-                                <th className="px-6 py-4">Mês Referência</th>
-                                <th className="px-6 py-4">Itens</th>
-                                <th className="px-6 py-4 text-right">Valor Total</th>
-                                <th className="px-6 py-4 text-right">Ações</th>
+                                <HeaderOrdenavel campo="createdAt" label="Data" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                <HeaderOrdenavel campo="departamentoDestino" label="Departamento Destino" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                <HeaderOrdenavel campo="mesReferencia" label="Mês Referência" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                <HeaderOrdenavel campo={(r) => r.itens?.length || 0} label="Itens" sortConfig={sortConfig} onSort={() => alternarOrdenacao('itens.length')} />
+                                <HeaderOrdenavel campo="valorTotal" label="Valor Total" align="right" sortConfig={sortConfig} onSort={alternarOrdenacao} />
+                                <HeaderOrdenavel label="Ações" align="right" desabilitado />
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 block lg:table-row-group">
-                            {requisicoesFiltradas.map(req => {
+                            {requisicoesExibidas.map(req => {
                                 const isExpandido = expandidoId === req.id;
                                 return (
                                     <React.Fragment key={req.id}>
