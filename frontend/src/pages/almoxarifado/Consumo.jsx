@@ -155,15 +155,7 @@ export default function Consumo({ usuarioLogado }) {
         if (!novaRequisicao.departamentoDestino) return alert('Escolha o departamento destino.');
         if (novaRequisicao.itens.some(i => !i.descricaoProduto)) return alert('Preencha as descrições de todos os materiais.');
 
-        if (!editandoId) {
-            const jaExiste = requisicoes.find(r =>
-                r.departamentoDestino === novaRequisicao.departamentoDestino &&
-                r.mesReferencia === novaRequisicao.mesReferencia
-            );
-            if (jaExiste) {
-                return alert(`Já existe um registro para "${novaRequisicao.departamentoDestino}" em "${novaRequisicao.mesReferencia}". Edite o registro existente.`);
-            }
-        }
+
 
         try {
             setSalvando(true);
@@ -421,14 +413,7 @@ export default function Consumo({ usuarioLogado }) {
                 width="max-w-4xl"
             >
                 <div className="flex flex-col gap-6">
-                    {!editandoId && (
-                        <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center gap-3">
-                            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
-                            <p className="text-xs text-amber-700 font-medium leading-tight">
-                                <strong>Atenção:</strong> Cada setor pode ter apenas 1 lançamento por mês. Se já existir, edite-o.
-                            </p>
-                        </div>
-                    )}
+
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
